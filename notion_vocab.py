@@ -12,10 +12,14 @@ from slacker import Slacker
 from datetime import datetime
 from PyDictionary import PyDictionary as dictionary
 import time
+import sys
+sys.path.append('C:\\NotionUpdate\\progress')
 
-token = 'secret_WCXYCVzuU52uLqAdYvJZRtpnd3UD4vR1c85iPFr0n55'
+from secret import secret
 
-databaseId = '3b592e17672c4943b51e0776eea52be3'
+token = secret.vocab("token")
+
+databaseId = secret.vocab("databaseId")
 
 headers = {
     "Authorization": "Bearer " + token,
@@ -239,7 +243,7 @@ class Connect_Notion:
         print(message)
         
         # slack access bot token
-        slack_token = 'xoxb-1725203205332-2999722705843-rH1YWkya6AAwzpOgphsCcbQs'
+        slack_token = secret.vocab("slack_token")
         
         data = {
             'token': slack_token,
