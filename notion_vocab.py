@@ -14,7 +14,6 @@ from PyDictionary import PyDictionary as dictionary
 import time
 import sys
 sys.path.append('C:\\NotionUpdate\\progress')
-
 from secret import secret
 
 token = secret.vocab("token")
