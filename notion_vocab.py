@@ -165,17 +165,24 @@ class Connect_Notion:
                 if projects_data['Count'][i] <= count_min+1 and projects_data['Conscious'][i]==False \
                     and i not in new_selection_index and i not in today_index:
                         new_selection_index.append(i)
+        
+        
         # random number between 0 to total length of vocabularies with the minmum count
         if len(new_selection_index) == 3:
             pass
         else:
             random_vocabs = []
-            for i in range(len(new_selection_index)):
-                ind = random.randint(0, len(new_selection_index)-1)
-                if ind not in random_vocabs:
-                    random_vocabs.append(new_selection_index[ind])
+            # Run as many times to satisfy 3 random words from the new_selection pool
+            while True:
+                ind = random.choices(new_selection_index)
+                if len(random_vocabs) > 2:
+                    break
+                if ind[0] not in random_vocabs:
+                    random_vocabs.append(ind[0])
             new_selection_index = random_vocabs
         # select a new vocab pageId randomly 
+
+
         new_selection_pageId = [projects_data['pageId'][i] for i in new_selection_index]
         
         # Store new & old vocabulary information for the Slack update
@@ -192,13 +199,15 @@ class Connect_Notion:
             today_vocabs.append(projects_data['Vocab'][today_index[i]])
             today_source.append(projects_data['Source'][today_index[i]])
             today_count.append(projects_data['Count'][today_index[i]])
+        #            
         
         print('new_selection_vocab: ',new_selection_vocab)
         print('today_vocabs: ', today_vocabs)
         # Prevent redundant Update 
-            # Set time parameters 
+            # Set time parameters:
+                # Send the "same" vocab if the time is between 1:00pm ~ 8:59pm
         from datetime import time as time_time
-        if Connect_Notion.is_time_between(time_time(11,00),time_time(3,00)) == True:
+        if Connect_Notion.is_time_between(time_time(13,00),time_time(20,59)) == True:
              # If the time is between these two times, send the same vocabulary again 
             return today_vocabs, today_source, today_count
 
@@ -235,18 +244,19 @@ class Connect_Notion:
 
     def send_vocab(self, vocab, definitions, source, count):
         # Send a Message using Slack
+        
         line = '****************************************'
-        message = ''
+        message = "Vocabs: " + vocab[0] + ', ' +  vocab[1] + ', ' +  vocab[2] + '\n'
         for i in range(3):
             message += line + '\n' + 'Next\'s Vocabulary: ' + vocab[i] + '\nSource: %s (%d)'%(source[i], count[i])+ '\n' +line + '\n\n' + definitions[i] + '\n\n\n'
         print(message)
         
         # slack access bot token
-        slack_token = secret.vocab("slack_token")
+        slack_token = secret.slack_token("slack_token")
         
         data = {
             'token': slack_token,
-            'channel': 'C02VDLCB52N',    # User ID. 
+            'channel': secret.slack_token("user_id"),    # User ID. 
             'as_user': True,
             'text': message
         }
@@ -271,15 +281,9 @@ projects_data = Cnotion.get_projects_data(data, projects)
 new_vocab, source, count = Cnotion.execute_update(projects_data, headers)
 definitions = Cnotion.get_definitions(new_vocab)
 
+Cnotion.send_vocab(new_vocab, definitions, source, count)
 
-
-
-
-from datetime import time as time_time
-if Connect_Notion.is_time_between(time_time(11,00),time_time(23,59)) == False:
-    Cnotion.send_vocab(new_vocab, definitions, source, count)
-
-
+vocab = new_vocab
 
 
 
