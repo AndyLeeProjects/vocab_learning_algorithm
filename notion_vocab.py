@@ -147,33 +147,27 @@ class Connect_Notion:
         count_min = min(projects_data['Count'])
         
         new_selection_index = []
+        must_review_vocabs = []
         
         # Find new vocabs with lowest count
             # count_min: lowest count
             # Conscious == False: Unmemorized vocab
             # not in next_index: suggest different words than the day before
             # not in new_source: suggest unique 3 words
-        for i in range(len(projects_data['Vocab'])):
-            if projects_data['Count'][i] == count_min and projects_data['Conscious'][i]==False \
-                and i not in new_selection_index and i not in today_index:
-                new_selection_index.append(i)
-
-        # If the selection falls short, rerun the for loop with modified restrictions
-        if len(new_selection_index) < 3:
-            for i in range(len(projects_data['Vocab'])):
-                if projects_data['Count'][i] <= count_min+1 and projects_data['Conscious'][i]==False \
-                    and i not in new_selection_index and i not in today_index:
-                        new_selection_index.append(i)
-        
-        # If the selection STILL falls short, fix the 2 vocabularies and add one more to the min count
-        if len(new_selection_index) == 2:
-            # must_review_vocabs are newly added vocabs that needs to be reviewed asap
-            must_review_vocabs = new_selection_index
-            for i in range(len(projects_data['Vocab'])):
-                if projects_data['Count'][i] <= count_min+2 and projects_data['Conscious'][i]==False \
-                    and i not in new_selection_index and i not in today_index:
-                    new_selection_index.append(i)
-    
+        c = 0
+        while True:
+            if len(new_selection_index)>2:
+                break
+            try:
+                if projects_data['Count'][c] == count_min and projects_data['Conscious'][c]==False \
+                    and c not in new_selection_index and c not in today_index:
+                    new_selection_index.append(c)
+            except:
+                c = 0
+                count_min += 1
+            c += 1
+            
+      
         # random number between 0 to total length of vocabularies with the minmum count
         if len(new_selection_index) == 3:
             pass
