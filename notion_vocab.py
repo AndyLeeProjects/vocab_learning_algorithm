@@ -161,13 +161,14 @@ class Connect_Notion:
             try:
                 if projects_data['Count'][c] == count_min and projects_data['Conscious'][c]==False \
                     and c not in new_selection_index and c not in today_index:
+                    
                     new_selection_index.append(c)
             except:
                 c = 0
                 count_min += 1
             c += 1
-            
-      
+        
+        print(new_selection_index)
         # random number between 0 to total length of vocabularies with the minmum count
         if len(new_selection_index) == 3:
             pass
@@ -285,7 +286,7 @@ projects_data = Cnotion.get_projects_data(data, projects)
 new_vocab, source, count = Cnotion.execute_update(projects_data, headers)
 definitions = Cnotion.get_definitions(new_vocab)
 
-Cnotion.send_vocab(new_vocab, definitions, source, count)
+#Cnotion.send_vocab(new_vocab, definitions, source, count)
 
 
 
