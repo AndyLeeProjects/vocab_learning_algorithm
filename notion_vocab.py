@@ -8,7 +8,6 @@ Created on Tue Jan 18 06:42:07 2022
 import requests, json
 import numpy as np
 import random as random
-from slacker import Slacker
 from datetime import datetime
 from PyDictionary import PyDictionary as dictionary
 import time
@@ -158,7 +157,7 @@ class Connect_Notion:
             if projects_data['Count'][i] == count_min and projects_data['Conscious'][i]==False \
                 and i not in new_selection_index and i not in today_index:
                 new_selection_index.append(i)
-        
+
         # If the selection falls short, rerun the for loop with modified restrictions
         if len(new_selection_index) < 3:
             for i in range(len(projects_data['Vocab'])):
@@ -166,12 +165,23 @@ class Connect_Notion:
                     and i not in new_selection_index and i not in today_index:
                         new_selection_index.append(i)
         
-        
+        # If the selection STILL falls short, fix the 2 vocabularies and add one more to the min count
+        if len(new_selection_index) == 2:
+            # must_review_vocabs are newly added vocabs that needs to be reviewed asap
+            must_review_vocabs = new_selection_index
+            for i in range(len(projects_data['Vocab'])):
+                if projects_data['Count'][i] <= count_min+2 and projects_data['Conscious'][i]==False \
+                    and i not in new_selection_index and i not in today_index:
+                    new_selection_index.append(i)
+    
         # random number between 0 to total length of vocabularies with the minmum count
         if len(new_selection_index) == 3:
             pass
         else:
             random_vocabs = []
+            # If must_review_vocabs is not empty, add them first before adding other vocabularies
+            if must_review_vocabs != []:
+                random_vocabs = must_review_vocabs
             # Run as many times to satisfy 3 random words from the new_selection pool
             while True:
                 ind = random.choices(new_selection_index)
@@ -282,8 +292,6 @@ new_vocab, source, count = Cnotion.execute_update(projects_data, headers)
 definitions = Cnotion.get_definitions(new_vocab)
 
 Cnotion.send_vocab(new_vocab, definitions, source, count)
-
-vocab = new_vocab
 
 
 
