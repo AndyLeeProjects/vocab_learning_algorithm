@@ -155,8 +155,9 @@ class Connect_Notion:
             # not in next_index: suggest different words than the day before
             # not in new_source: suggest unique 3 words
         c = 0
+        least_count = count_min
         while True:
-            if len(new_selection_index)>2:
+            if len(new_selection_index)>10:
                 break
             try:
                 if projects_data['Count'][c] == count_min and projects_data['Conscious'][c]==False \
@@ -165,9 +166,12 @@ class Connect_Notion:
                     new_selection_index.append(c)
             except:
                 c = 0
-                count_min += 1
+
+                # least_count == 1: Recently added, so add them to must_review list
+                if least_count == 1:
+                    must_review_vocabs = new_selection_index
+                count_min += 1                    
             c += 1
-        
         print(new_selection_index)
         # random number between 0 to total length of vocabularies with the minmum count
         if len(new_selection_index) == 3:
@@ -208,13 +212,6 @@ class Connect_Notion:
         
         print('new_selection_vocab: ',new_selection_vocab)
         print('today_vocabs: ', today_vocabs)
-        # Prevent redundant Update 
-            # Set time parameters:
-                # Send the "same" vocab if the time is between 1:00pm ~ 8:59pm
-        from datetime import time as time_time
-        if Connect_Notion.is_time_between(time_time(13,00),time_time(20,59)) == True:
-             # If the time is between these two times, send the same vocabulary again 
-            return today_vocabs, today_source, today_count
 
         # Update Notion 
             # 1. Change next -> Waitlist
@@ -254,6 +251,7 @@ class Connect_Notion:
         message = "Vocabs: " + vocab[0] + ', ' +  vocab[1] + ', ' +  vocab[2] + '\n'
         for i in range(3):
             message += line + '\n' + 'Next\'s Vocabulary: ' + vocab[i] + '\nSource: %s (%d)'%(source[i], count[i])+ '\n' +line + '\n\n' + definitions[i] + '\n\n\n'
+        message += "\n\n\n"
         print(message)
         
         # slack access bot token
