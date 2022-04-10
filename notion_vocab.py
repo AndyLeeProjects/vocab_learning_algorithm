@@ -16,16 +16,15 @@ sys.path.append('C:\\NotionUpdate\\progress')
 from secret import secret
 
 token = secret.vocab("token")
-
 databaseId = secret.vocab("databaseId")
-
 headers = {
     "Authorization": "Bearer " + token,
     "Content-Type": "application/json",
     "Notion-Version": "2021-05-13"
 }
 
-
+# Set total number of vocabulary suggestions 
+total_vocab_sug = 5
 
 class Connect_Notion:
     
@@ -168,30 +167,31 @@ class Connect_Notion:
                 c = 0
 
                 # least_count == 1: Recently added, so add them to must_review list
-                if least_count == 1:
+                if least_count == 1 or least_count == 0:
                     must_review_vocabs = new_selection_index
                 count_min += 1                    
             c += 1
-        print(new_selection_index)
+
         # random number between 0 to total length of vocabularies with the minmum count
-        if len(new_selection_index) == 3:
+        if len(new_selection_index) == total_vocab_sug:
             pass
         else:
             random_vocabs = []
+            
             # If must_review_vocabs is not empty, add them first before adding other vocabularies
             if must_review_vocabs != []:
                 random_vocabs = must_review_vocabs
+                
             # Run as many times to satisfy 3 random words from the new_selection pool
             while True:
                 ind = random.choices(new_selection_index)
-                if len(random_vocabs) > 2:
+                if len(random_vocabs) > total_vocab_sug-1:
                     break
                 if ind[0] not in random_vocabs:
                     random_vocabs.append(ind[0])
             new_selection_index = random_vocabs
+
         # select a new vocab pageId randomly 
-
-
         new_selection_pageId = [projects_data['pageId'][i] for i in new_selection_index]
         
         # Store new & old vocabulary information for the Slack update
@@ -201,14 +201,17 @@ class Connect_Notion:
         today_vocabs = []
         today_source = []
         today_count = []
-        for i in range(3):
-            new_selection_vocab.append(projects_data['Vocab'][new_selection_index[i]])
-            new_selection_source.append(projects_data['Source'][new_selection_index[i]])
-            new_selection_count.append(projects_data['Count'][new_selection_index[i]])
-            today_vocabs.append(projects_data['Vocab'][today_index[i]])
-            today_source.append(projects_data['Source'][today_index[i]])
-            today_count.append(projects_data['Count'][today_index[i]])
-        #            
+        for i in range(total_vocab_sug):
+            # Prevent an error caused by changing the total number of vocab suggestions
+            try:
+                new_selection_vocab.append(projects_data['Vocab'][new_selection_index[i]])
+                new_selection_source.append(projects_data['Source'][new_selection_index[i]])
+                new_selection_count.append(projects_data['Count'][new_selection_index[i]])
+                today_vocabs.append(projects_data['Vocab'][today_index[i]])
+                today_source.append(projects_data['Source'][today_index[i]])
+                today_count.append(projects_data['Count'][today_index[i]])
+            except:
+                pass
         
         print('new_selection_vocab: ',new_selection_vocab)
         print('today_vocabs: ', today_vocabs)
@@ -217,14 +220,17 @@ class Connect_Notion:
             # 1. Change next -> Waitlist
             # 2. Change Waitlist -> next
             # 3. Update count +1 
-        for i in range(3):
-            Connect_Notion.updateData_to_waitlist(today_pageId[i], headers)
-            time.sleep(.5)
-            Connect_Notion.updateData_to_next(new_selection_pageId[i], headers)
-            time.sleep(.5)
-            Connect_Notion.updateData_count(today_count[i], today_pageId[i], headers)
-            time.sleep(.5)
-        
+        for i in range(total_vocab_sug):
+            # Prevent an error caused by changing the total number of vocab suggestions
+            try:
+                Connect_Notion.updateData_to_waitlist(today_pageId[i], headers)
+                time.sleep(.5)
+                Connect_Notion.updateData_to_next(new_selection_pageId[i], headers)
+                time.sleep(.5)
+                Connect_Notion.updateData_count(today_count[i], today_pageId[i], headers)
+                time.sleep(.5)
+            except:
+                pass
         
 
         
@@ -233,7 +239,7 @@ class Connect_Notion:
     def get_definitions(self, vocab):
         
         definitions = []
-        for i in range(3):
+        for i in range(total_vocab_sug):
             definition = str(dictionary.meaning(vocab[i])).replace('], ','\n')
             definition = definition.replace('{','')
             definition = definition.replace('}','')
@@ -248,8 +254,13 @@ class Connect_Notion:
         # Send a Message using Slack
         
         line = '****************************************'
-        message = "Vocabs: " + vocab[0] + ', ' +  vocab[1] + ', ' +  vocab[2] + '\n'
-        for i in range(3):
+        message = "Vocabs: "
+        for voc in range(total_vocab_sug):
+            message += vocab[voc] + ', '
+            
+        message += '\n'
+        
+        for i in range(total_vocab_sug):
             message += line + '\n' + 'Next\'s Vocabulary: ' + vocab[i] + '\nSource: %s (%d)'%(source[i], count[i])+ '\n' +line + '\n\n' + definitions[i] + '\n\n\n'
         message += "\n\n\n"
         print(message)
@@ -284,7 +295,7 @@ projects_data = Cnotion.get_projects_data(data, projects)
 new_vocab, source, count = Cnotion.execute_update(projects_data, headers)
 definitions = Cnotion.get_definitions(new_vocab)
 
-#Cnotion.send_vocab(new_vocab, definitions, source, count)
+Cnotion.send_vocab(new_vocab, definitions, source, count)
 
 
 
