@@ -136,7 +136,7 @@ class Connect_Notion:
         updateData_count = {
             "properties": {
                 "Conscious": {
-                                "checkbox": "True"
+                                "checkbox": True
             }
         }}
         
@@ -241,10 +241,9 @@ class Connect_Notion:
             try:
                 Connect_Notion.updateData_to_waitlist(today_pageId[i], headers)
                 Connect_Notion.updateData_to_next(new_selection_pageId[i], headers)
-                if today_count[i] > 6:
+                if today_count[i] >= 6:
                     Connect_Notion.move_to_conscious(today_pageId[i], headers)
-                else:
-                    Connect_Notion.updateData_count(today_count[i], today_pageId[i], headers)
+                Connect_Notion.updateData_count(today_count[i], today_pageId[i], headers)
             except:
                 pass
         
