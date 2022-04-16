@@ -129,6 +129,21 @@ class Connect_Notion:
         
         response = requests.request("PATCH", updateUrl_to_waitlist, 
                                     headers=headers, data=json.dumps(updateData_count))
+        
+    def move_to_conscious(pageId, headers):
+        # After reaching 7 exposures, the vocabulary will moved to other DB, called "conscious"
+        updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
+        updateData_count = {
+            "properties": {
+                "Conscious": {
+                                "checkbox": "True"
+            }
+        }}
+        
+        
+        response = requests.request("PATCH", updateUrl_to_waitlist, 
+                                    headers=headers, data=json.dumps(updateData_count))
+        
     
 
     def execute_update(self, projects_data, headers):
@@ -215,20 +230,21 @@ class Connect_Notion:
         
         print('new_selection_vocab: ',new_selection_vocab)
         print('today_vocabs: ', today_vocabs)
-
+        print()
         # Update Notion 
             # 1. Change next -> Waitlist
-            # 2. Change Waitlist -> next
+            # 2.Change Waitlist -> next
             # 3. Update count +1 
+                # If the exposure count reaches 7, move to conscious DB
         for i in range(total_vocab_sug):
             # Prevent an error caused by changing the total number of vocab suggestions
             try:
                 Connect_Notion.updateData_to_waitlist(today_pageId[i], headers)
-                time.sleep(.5)
                 Connect_Notion.updateData_to_next(new_selection_pageId[i], headers)
-                time.sleep(.5)
-                Connect_Notion.updateData_count(today_count[i], today_pageId[i], headers)
-                time.sleep(.5)
+                if today_count[i] > 6:
+                    Connect_Notion.move_to_conscious(today_pageId[i], headers)
+                else:
+                    Connect_Notion.updateData_count(today_count[i], today_pageId[i], headers)
             except:
                 pass
         
