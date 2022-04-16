@@ -21,10 +21,10 @@ I would simply go into the Notion application and type in the vocabulary I wish 
 The reason for connecting to Slack API is for the convenient exposure of the vocabularies. 
 
 ### 3. Write Smart (Vocabluary) Suggesting Algorithm 
-These are some of the **conditions** when suggesting vocabularies:
+These are some of the **conditions & procedures** when suggesting vocabularies:
 - Sort the vocabularies with minimum counts(exposures) so that suggestions are not clustered
 - Eliminate redundant or consecutive suggestions
-- Suggest a total of 6 vocabularies a day divided into two sections: morning and night
+- Suggest a total of 15 vocabularies a day divided into 3 sections: morning, afternoon, and night
 - Add the number of exposure by one every time each vocabulary is exposed to my brain
 - Update above changes to the Notion Vocabulary database
 - Record the vocabulary input date and the date when I checked the memorization completed box for further analysis
