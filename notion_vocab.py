@@ -171,7 +171,7 @@ class Connect_Notion:
         c = 0
         least_count = count_min
         while True:
-            if len(new_selection_index)>10:
+            if len(new_selection_index)>15:
                 break
             try:
                 if projects_data['Count'][c] == count_min and projects_data['Conscious'][c]==False \
@@ -184,9 +184,10 @@ class Connect_Notion:
                 # least_count == 1: Recently added, so add maximum 3 to must_review list
                 if (least_count == 1 or least_count == 0) and len(new_selection_index) < 4:
                     must_review_vocabs = new_selection_index
-                else:
+                elif (least_count == 1 or least_count == 0) and len(new_selection_index) >= 4:
                     must_review_vocabs = new_selection_index[:3]
-                
+                else:
+                    pass
                 count_min += 1                    
             c += 1
 
@@ -297,8 +298,8 @@ class Connect_Notion:
             'text': message
         }
         
-        #requests.post(url='https://slack.com/api/chat.postMessage',
-        #              data=data)
+        requests.post(url='https://slack.com/api/chat.postMessage',
+                      data=data)
 
     def is_time_between(begin_time, end_time, check_time=None):
         # If check time is not given, default to current UTC time
