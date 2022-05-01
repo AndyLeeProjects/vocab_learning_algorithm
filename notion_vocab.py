@@ -259,7 +259,7 @@ class Connect_Notion:
         
         definitions = []
         for i in range(total_vocab_sug):
-            definition = str(dictionary.meaning(vocab[i])).replace('], ','\n')
+            definition = str(dictionary.meaning(vocab[i])).replace('], ','\n\n')
             definition = definition.replace('{','')
             definition = definition.replace('}','')
             definition = definition.replace('[','')
