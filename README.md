@@ -9,7 +9,7 @@ Thus, I decided to test the hypothesis of the Psychology Professor and create an
 <br>  
 
 # Purpose & Goal
-- **The total time spent** learning new vocabulary is the key component of this project. Instead of spending too much time learning & remembering, the goal is to periodically expose each vocabulary to my brain a total of 7 times. Also, when the vocabs are suggested via Slack message, I will spend less than 15 seconds relearning them. Thus, since there will be three notifications a day, the ultimate goal is to spend less than a minute every day to own the vocabulary being learned. 
+- **The total time spent** learning new vocabulary is the key component of this project. Instead of spending too much time learning & remembering, the goal is to periodically expose each vocabulary to my brain a total of 7 times. Also, when the vocabs are suggested via Slack message, I will spend less than 15 seconds relearning them. Thus, the ultimate goal is to spend less than a minute every day(since there will be three notifications a day) to own hundreds or even thousands of vocabulary being learned. 
 
 <br>  
 <br>  
