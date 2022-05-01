@@ -11,7 +11,7 @@ Thus, I decided to test the hypothesis of the Psychology Professor.
 <br>  
 <br>  
 
-## Procedure
+# Procedure
 The code was relatively simple, but the procedure needed a little contemplation.
 <br>  
 ### 1. Collect Vocabularies in [Notion database](https://andyhomepage.notion.site/Vocabularies-c97b642944854b44826d8a1ce73bc3da)
