@@ -10,6 +10,7 @@ Thus, I decided to test the hypothesis of the Psychology Professor and create an
 
 # Purpose & Goal
 - **The total time spent** learning new vocabulary is the key component of this project. Instead of spending too much time learning & remembering, the goal is to periodically expose each vocabulary to my brain a total of 7 times. Also, when the vocabs are suggested via Slack message, I will spend less than 15 seconds relearning them. Thus, the ultimate goal is to spend less than a minute every day(since there will be three notifications a day) to own hundreds or even thousands of vocabulary being learned. 
+- After the seven exposures, each vocabulary will be moved to another database where I will test myself whether or not I can create meaningful sentences and test my knowledge of the learned vocabs. Then, depending on my confidence, I will rate each from 1 to 5 to further analyze the algorithm's efficiency.
 
 <br>  
 <br>  
