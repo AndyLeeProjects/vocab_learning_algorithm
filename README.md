@@ -1,17 +1,20 @@
 # Vocabulary Analysis
 
 When I was younger, a Psychology Professor came up to me and said something that I remember to this day. 
-He said, "To bring the information from the unconscious level to the level of consciousness, it takes, on average, seven exposures."
-Although it is super random, and not sure why I remember this, it is true that the professor has said this to me.
-Recently, I have been trying to develop a system that would allow me to "memorize" vocabulary more efficiently. 
-This was because compared to all the new vocabularies that I learned every day, the ones that I actually absorbed were only a handful. 
-Thus, I decided to test the hypothesis of the Psychology Professor. 
+He said, "To bring the information from the unconscious level to the level of consciousness, it takes seven exposures on average."
+I am not sure why I remember this, but it has impacted me to create the vocabulary suggesting algorithm years later. 
+Recently, I have been trying to develop a system that would allow me to memorize vocabulary more efficiently since it was easy for me to learn a word but challenging to own it. 
+Thus, I decided to test the hypothesis of the Psychology Professor and create an algorithm that would allow me to spend the least amount of time to "own" new vocabulary learned.
 
+<br>  
+
+# Purpose & Goal
+- **The total time spent** learning new vocabulary is the key component of this project. Instead of spending too much time learning & remembering, the goal is to periodically expose each vocabulary to my brain a total of 7 times. Also, when the vocabs are suggested via Slack message, I will spend less than 15 seconds relearning them. Thus, since there will be three notifications a day, the ultimate goal is to spend less than a minute every day to own the vocabulary being learned. 
 
 <br>  
 <br>  
 
-# Procedure
+# Algorithm Development Procedure
 The code was relatively simple, but the procedure needed a little contemplation.
 <br>  
 ### 1. Collect Vocabularies in [Notion database](https://andyhomepage.notion.site/Vocabularies-c97b642944854b44826d8a1ce73bc3da)
