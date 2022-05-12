@@ -8,6 +8,7 @@ Created on Tue Jan 18 06:42:07 2022
 import requests, json
 import numpy as np
 import random as random
+from datetime import date
 from datetime import datetime
 from PyDictionary import PyDictionary as dictionary
 import time
@@ -23,8 +24,9 @@ headers = {
     "Notion-Version": "2021-05-13"
 }
 
-# Set total number of vocabulary suggestions 
+# Set total number of vocabulary suggestions & Exposures
 total_vocab_sug = 5
+total_exposures = 6
 
 class Connect_Notion:
     
@@ -76,6 +78,13 @@ class Connect_Notion:
             elif p=="pageId":
                 projects_data[p] = [data['results'][i]['id']
                                     for i in range(len(data["results"]))]
+            elif p=="Last_Edited":
+                last_edited_dates = []
+                for i in range(len(data["results"])):
+                    date = datetime.fromisoformat(data['results'][i]['properties'][p]['last_edited_time'][:-1] + '+00:00')
+                    date = date.strftime('%Y-%m-%d')
+                    last_edited_dates.append(date)       
+                projects_data[p] = last_edited_dates
         return projects_data
     
         
@@ -175,7 +184,8 @@ class Connect_Notion:
                 break
             try:
                 if projects_data['Count'][c] == count_min and projects_data['Conscious'][c]==False \
-                    and c not in new_selection_index and c not in today_index:
+                    and c not in new_selection_index and c not in today_index \
+                        and date.today().strftime('%Y-%m-%d') != projects_data['Last_Edited'][c]:
                     
                     new_selection_index.append(c)
             except:
@@ -245,7 +255,7 @@ class Connect_Notion:
             try:
                 Connect_Notion.updateData_to_waitlist(today_pageId[i], headers)
                 Connect_Notion.updateData_to_next(new_selection_pageId[i], headers)
-                if today_count[i] >= 6:
+                if today_count[i] >= total_exposures:
                     Connect_Notion.move_to_conscious(today_pageId[i], headers)
                 Connect_Notion.updateData_count(today_count[i], today_pageId[i], headers)
             except:
