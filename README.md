@@ -30,7 +30,10 @@ I would simply go into the Notion application and type in the vocabulary I wish 
 ### 2. Connect to Slack API
 Connecting to Slack API allows to set up timed notifications for the exposures of the vocabularies. 
 
-### 3. Write Smart (Vocabluary) Suggesting Algorithm 
+### 3. Connect to Oxford Dictionary API
+Although there exists a PyDictionary module that allows direct retrieval of vocabularies, connecting to the Oxford Dictionary API provides a broader range of words and definitions. Also, the Oxford Dictionary generates vocab examples that will help comprehend the word's meaning. 
+
+### 4. Write Smart (Vocabluary) Suggesting Algorithm 
 These are some of the **conditions & procedures** when suggesting vocabularies:
 - Sort the vocabularies with minimum counts(exposures) so that suggestions are not clustered
 - Eliminate redundant or consecutive suggestions
