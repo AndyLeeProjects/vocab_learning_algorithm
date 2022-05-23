@@ -172,6 +172,8 @@ class Connect_Notion:
         new_selection_index = []
         must_review_vocabs = []
         
+        print()
+        print("Updating Vocabs...")
         # Find new vocabs with lowest count
             # count_min: lowest count
             # Conscious == False: Unmemorized vocab
@@ -180,12 +182,14 @@ class Connect_Notion:
         c = 0
         least_count = count_min
         while True:
-            if len(new_selection_index)>15:
+            if len(new_selection_index) > 15 or count_min > len(projects_data['Vocab']):
                 break
             try:
-                if projects_data['Count'][c] == count_min and projects_data['Conscious'][c]==False \
-                    and c not in new_selection_index and c not in today_index \
-                        and date.today().strftime('%Y-%m-%d') != projects_data['Last_Edited'][c]:
+                if projects_data['Count'][c] == count_min and \
+                   projects_data['Conscious'][c]==False and \
+                   c not in new_selection_index and \
+                   c not in today_index: #and \
+                   #date.today().strftime('%Y-%m-%d') != projects_data['Last_Edited'][c]:
                     
                     new_selection_index.append(c)
             except:
@@ -200,7 +204,7 @@ class Connect_Notion:
                     pass
                 count_min += 1                    
             c += 1
-
+        print("new_selection_index", new_selection_index)
         # random number between 0 to total length of vocabularies with the minmum count
         if len(new_selection_index) == total_vocab_sug:
             pass
@@ -264,40 +268,65 @@ class Connect_Notion:
 
         
         return today_vocabs, today_source, today_count
-    
-    def get_definitions(self, vocab):
-        
-        definitions = []
-        for i in range(total_vocab_sug):
-            definition = str(dictionary.meaning(vocab[i])).replace('], ','\n\n')
-            definition = definition.replace('{','')
-            definition = definition.replace('}','')
-            definition = definition.replace('[','')
-            definition = definition.replace(']','')
-            definition = definition.replace('\'','')
-            definitions.append(definition)
-            
-        return definitions
 
-    def send_vocab(self, vocab, definitions, source, count):
+    
+    def connect_OxfordAPI(self, vocabs, app_id, app_key):
+        endpoint = "entries"
+        language_code = "en-us"
+
+        vocab_dic = {}
+        for vocab in vocabs:
+            url = "https://od-api.oxforddictionaries.com/api/v2/" + endpoint + "/" + language_code + "/" + vocab.lower()
+            r = requests.get(url, headers = {"app_id": app_id, "app_key": app_key})
+            data = json.loads(r.text)
+            vocab_info = data['results'][0]['lexicalEntries'][0]['entries'][0]['senses']
+            
+            # Some definitions do not contain any examples in Oxford Dictionary
+            try:
+                examples = [vocab_info[i]['examples'][0]['text']
+                        for i in range(len(vocab_info))]
+            except:
+                examples = None
+            definitions = [vocab_info[i]['definitions'][0]
+                        for i in range(len(vocab_info))]
+            vocab_dic.setdefault(vocab,[]).append({'definitions':definitions,
+                                                   'examples':examples})
+        return vocab_dic
+            
+
+
+    def send_vocab(self, vocabs, definitions, source, count):
         # Send a Message using Slack
         
-        line = '****************************************'
-        message = "Vocabs: "
-        for voc in range(total_vocab_sug):
-            if voc == total_vocab_sug-1:
-                message += vocab[voc]
-            else:
-                message += vocab[voc] + ', '
+        line = '****************************************\n'
+        message = "Vocabs: " + str(vocabs).strip('[]').replace('\'','') + '\n'
+
+        c = 0
+        for k in vocab_dic.keys():
+            total_def = vocab_dic[k][0]['definitions']
+            total_ex = vocab_dic[k][0]['examples']
+            message += line
+            message += 'Vocab %d: ' % (c+1) + k + '\n'
+            message += 'Source: ' + source[c] + '\n'
+            message += line
+            message += 'Definition: \n' 
             
+            for i in range(len(total_def)):    
+                message += '\t - ' + total_def[i] + '\n'
             
-        message += '\n'
-        
-        for i in range(total_vocab_sug):
-            message += line + '\n' + 'Next\'s Vocabulary: ' + vocab[i] + '\nSource: %s (%d)'%(source[i], count[i])+ '\n' +line + '\n\n' + definitions[i] + '\n\n\n'
-        message += "\n\n\n"
-        print(message)
-        
+            try:
+                vocab_dic[k][0]['examples'][0]
+                message += '\nExample: \n'
+                
+                for i in range(len(total_ex)):
+                    message += '\t - ' +  total_ex[i] + '\n'
+            
+            except:
+                pass
+            
+            message += '\n\n'
+            c += 1
+                
         # slack access bot token
         slack_token = secret.slack_token("slack_token")
         
@@ -320,36 +349,17 @@ class Connect_Notion:
             return check_time >= begin_time or check_time <= end_time
 
         
-
+print("Retrieving Data...")
+print()
 Cnotion = Connect_Notion()
 data = Cnotion.readDatabase(databaseId, headers)
 projects = Cnotion.get_projects_titles(data)
 projects_data = Cnotion.get_projects_data(data, projects)
 new_vocab, source, count = Cnotion.execute_update(projects_data, headers)
-definitions = Cnotion.get_definitions(new_vocab)
 
-Cnotion.send_vocab(new_vocab, definitions, source, count)
+vocab_dic = Cnotion.connect_OxfordAPI(new_vocab, secret.oxford_API("api_id"), secret.oxford_API("api_key"))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Cnotion.send_vocab(new_vocab, vocab_dic, source, count)
 
 
 
