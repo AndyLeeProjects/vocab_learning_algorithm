@@ -204,7 +204,7 @@ class Connect_Notion:
                     pass
                 count_min += 1                    
             c += 1
-        print("new_selection_index", new_selection_index)
+        
         # random number between 0 to total length of vocabularies with the minmum count
         if len(new_selection_index) == total_vocab_sug:
             pass
@@ -279,7 +279,12 @@ class Connect_Notion:
             url = "https://od-api.oxforddictionaries.com/api/v2/" + endpoint + "/" + language_code + "/" + vocab.lower()
             r = requests.get(url, headers = {"app_id": app_id, "app_key": app_key})
             data = json.loads(r.text)
-            vocab_info = data['results'][0]['lexicalEntries'][0]['entries'][0]['senses']
+            
+            # Some vocabuarlies do not have definitions (ex: fugazi)
+            try:
+                vocab_info = data['results'][0]['lexicalEntries'][0]['entries'][0]['senses']
+            except:
+                vocab_info = None
             
             # Some definitions do not contain any examples in Oxford Dictionary
             try:
@@ -287,8 +292,12 @@ class Connect_Notion:
                         for i in range(len(vocab_info))]
             except:
                 examples = None
-            definitions = [vocab_info[i]['definitions'][0]
-                        for i in range(len(vocab_info))]
+            
+            try:    
+                definitions = [vocab_info[i]['definitions'][0]
+                            for i in range(len(vocab_info))]
+            except:
+                definitions = None
             vocab_dic.setdefault(vocab,[]).append({'definitions':definitions,
                                                    'examples':examples})
         return vocab_dic
@@ -310,23 +319,26 @@ class Connect_Notion:
             message += 'Source: ' + source[c] + '\n'
             message += line
             message += 'Definition: \n' 
-            
-            for i in range(len(total_def)):    
-                message += '\t - ' + total_def[i] + '\n'
-            
             try:
-                vocab_dic[k][0]['examples'][0]
-                message += '\nExample: \n'
+                for i in range(len(total_def)):
+                    message += '\t - ' + total_def[i] + '\n'
                 
-                for i in range(len(total_ex)):
-                    message += '\t - ' +  total_ex[i] + '\n'
-            
+                try:
+                    vocab_dic[k][0]['examples'][0]
+                    message += '\nExample: \n'
+                    
+                    for i in range(len(total_ex)):
+                        message += '\t - ' +  total_ex[i] + '\n'
+                
+                except:
+                    pass
             except:
-                pass
-            
+                message += 'None\n' 
             message += '\n\n'
             c += 1
-                
+        
+        print(message)
+        
         # slack access bot token
         slack_token = secret.slack_token("slack_token")
         
