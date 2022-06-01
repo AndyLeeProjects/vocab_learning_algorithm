@@ -188,8 +188,8 @@ class Connect_Notion:
                 if projects_data['Count'][c] == count_min and \
                    projects_data['Conscious'][c]==False and \
                    c not in new_selection_index and \
-                   c not in today_index: #and \
-                   #date.today().strftime('%Y-%m-%d') != projects_data['Last_Edited'][c]:
+                   c not in today_index and \
+                   date.today().strftime('%Y-%m-%d') != projects_data['Last_Edited'][c]:
                     
                     new_selection_index.append(c)
             except:
