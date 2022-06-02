@@ -10,8 +10,6 @@ import numpy as np
 import random as random
 from datetime import date
 from datetime import datetime
-from PyDictionary import PyDictionary as dictionary
-import time
 import sys
 sys.path.append('C:\\NotionUpdate\\progress')
 from secret import secret
@@ -280,58 +278,80 @@ class Connect_Notion:
             r = requests.get(url, headers = {"app_id": app_id, "app_key": app_key})
             data = json.loads(r.text)
             
-            # Some vocabuarlies do not have definitions (ex: fugazi)
+            # DEFINE vocab_info
+            # try: Some vocabuarlies do not have definitions (ex: fugazi)
             try:
                 vocab_info = data['results'][0]['lexicalEntries'][0]['entries'][0]['senses']
             except:
                 vocab_info = None
             
-            # Some definitions do not contain any examples in Oxford Dictionary
+            # GET EXAMPLES
+            # try: Some definitions do not contain any examples in Oxford Dictionary
             try:
                 examples = [vocab_info[i]['examples'][0]['text']
                         for i in range(len(vocab_info))]
             except:
                 examples = None
             
+            # GET SYNONYMS
+            # try: If synonyms are not in Oxford Dictionary, output None
+            try:
+                synonyms = [vocab_info[0]['synonyms'][i]['text']
+                            for i in range(len(vocab_info[0]['synonyms']))]
+                if len(synonyms) > 5:
+                    synonyms = synonyms[:4]
+            except:
+                synonyms = None
+            
+            # GET DEFINITIONS
+            # try: If the definition is not in Oxford Dictionary, output None
             try:    
                 definitions = [vocab_info[i]['definitions'][0]
                             for i in range(len(vocab_info))]
             except:
                 definitions = None
             vocab_dic.setdefault(vocab,[]).append({'definitions':definitions,
-                                                   'examples':examples})
+                                                   'examples':examples,
+                                                   'synonyms':synonyms})
         return vocab_dic
             
 
 
+    # Send a Message using Slack API
     def send_vocab(self, vocabs, definitions, source, count):
-        # Send a Message using Slack
         
         line = '****************************************\n'
         message = "Vocabs: " + str(vocabs).strip('[]').replace('\'','') + '\n'
 
         c = 0
         for k in vocab_dic.keys():
-            total_def = vocab_dic[k][0]['definitions']
-            total_ex = vocab_dic[k][0]['examples']
+            all_def = vocab_dic[k][0]['definitions']
+            all_ex = vocab_dic[k][0]['examples']
+            all_sy = vocab_dic[k][0]['synonyms']
             message += line
             message += 'Vocab %d: ' % (c+1) + k + '\n'
             message += 'Source: ' + source[c] + '\n'
             message += line
             message += 'Definition: \n' 
             try:
-                for i in range(len(total_def)):
-                    message += '\t - ' + total_def[i] + '\n'
+                # Write Definitions
+                for definition in range(len(all_def)):
+                    message += '\t - ' + all_def[definition] + '\n'
                 
-                try:
-                    vocab_dic[k][0]['examples'][0]
+                # Write Synonyms
+                if all_sy != None:
+                    message += '\nSynonyms: '
+                    for synonym in all_sy:
+                        message += synonym + ', '
+                    message += '\n'
+                
+                # Write Examples
+                if all_ex != None:
                     message += '\nExample: \n'
                     
-                    for i in range(len(total_ex)):
-                        message += '\t - ' +  total_ex[i] + '\n'
-                
-                except:
-                    pass
+                    for example in range(len(all_ex)):
+                        message += '\t - ' +  all_ex[example] + '\n'
+                                    
             except:
                 message += 'None\n' 
             message += '\n\n'
@@ -368,9 +388,7 @@ data = Cnotion.readDatabase(databaseId, headers)
 projects = Cnotion.get_projects_titles(data)
 projects_data = Cnotion.get_projects_data(data, projects)
 new_vocab, source, count = Cnotion.execute_update(projects_data, headers)
-
 vocab_dic = Cnotion.connect_OxfordAPI(new_vocab, secret.oxford_API("api_id"), secret.oxford_API("api_key"))
-
 Cnotion.send_vocab(new_vocab, vocab_dic, source, count)
 
 
