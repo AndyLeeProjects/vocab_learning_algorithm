@@ -85,7 +85,24 @@ class Connect_Notion:
                 projects_data[p] = last_edited_dates
         return projects_data
     
-        
+    
+    # Notion API limits a list result of 100 elements next_page() helps retrieve ALL data
+    def next_page(self, data):
+        readUrl = f"https://api.notion.com/v1/databases/{databaseId}/query"
+        next_cur = data['next_cursor']
+        while data['has_more']:
+            data['start_cursor'] = next_cur
+            data_hidden = json.dumps(data)
+            data_hidden = requests.post(readUrl, headers= headers, data= data_hidden).json() # Gets the next 100 results
+
+            
+            next_cur = data_hidden['next_cursor']
+            
+            data["results"] += data_hidden["results"]
+            if next_cur is None:
+                break
+        return data
+
         
         
     def updateData_to_next(pageId, headers):
@@ -151,6 +168,9 @@ class Connect_Notion:
         response = requests.request("PATCH", updateUrl_to_waitlist, 
                                     headers=headers, data=json.dumps(updateData_count))
         
+
+
+        
     
 
     def execute_update(self, projects_data, headers):
@@ -180,7 +200,7 @@ class Connect_Notion:
         c = 0
         least_count = count_min
         while True:
-            if len(new_selection_index) > 15 or count_min > len(projects_data['Vocab']):
+            if len(projects_data['Vocab']) < c + 1 and count_min == np.max(projects_data['Count']):
                 break
             try:
                 if projects_data['Count'][c] == count_min and \
@@ -197,13 +217,13 @@ class Connect_Notion:
                 if (least_count == 1 or least_count == 0) and len(new_selection_index) < 4:
                     must_review_vocabs = new_selection_index
                 elif (least_count == 1 or least_count == 0) and len(new_selection_index) >= 4:
-                    must_review_vocabs = new_selection_index[:3]
+                    must_review_vocabs = new_selection_index[:2]
                 else:
                     pass
                 count_min += 1                    
             c += 1
         
-        # random number between 0 to total length of vocabularies with the minmum count
+        # random number between 0 to total length of vocabularies with the minimum count
         if len(new_selection_index) == total_vocab_sug:
             pass
         else:
@@ -232,6 +252,7 @@ class Connect_Notion:
         today_vocabs = []
         today_source = []
         today_count = []
+        
         for i in range(total_vocab_sug):
             # Prevent an error caused by changing the total number of vocab suggestions
             try:
@@ -350,7 +371,7 @@ class Connect_Notion:
                     message += '\nExample: \n'
                     
                     for example in range(len(all_ex)):
-                        message += '\t - ' +  all_ex[example] + '\n'
+                        message += '\t - ' +  all_ex[example].strip('\n ') + '\n'
                                     
             except:
                 message += 'None\n' 
@@ -379,14 +400,17 @@ class Connect_Notion:
             return check_time >= begin_time and check_time <= end_time
         else: # crosses midnight
             return check_time >= begin_time or check_time <= end_time
-
+    
+        
         
 print("Retrieving Data...")
 print()
 Cnotion = Connect_Notion()
 data = Cnotion.readDatabase(databaseId, headers)
+data = Cnotion.next_page(data)
 projects = Cnotion.get_projects_titles(data)
 projects_data = Cnotion.get_projects_data(data, projects)
+
 new_vocab, source, count = Cnotion.execute_update(projects_data, headers)
 vocab_dic = Cnotion.connect_OxfordAPI(new_vocab, secret.oxford_API("api_id"), secret.oxford_API("api_key"))
 Cnotion.send_vocab(new_vocab, vocab_dic, source, count)
