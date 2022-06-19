@@ -52,7 +52,12 @@ These are some of the **conditions & procedures** when suggesting vocabularies:
 
 # Automation Video & Slack Notification
 
+### Automation Sample
 https://user-images.githubusercontent.com/84836749/174498756-449be7fd-045f-4c55-ab07-4f8227e26f6f.mp4
+
+### Slack Notification Sample
+
+https://user-images.githubusercontent.com/84836749/174499047-42f974e1-66cf-4d82-95f5-bffb47a05482.MP4
 
 
 
