@@ -20,6 +20,10 @@ Thus, I decided to test the hypothesis of the Psychology Professor and create an
 <br>  
 <br>  
 
+
+https://user-images.githubusercontent.com/84836749/174498704-ea6ee636-c6f2-4ff4-bf4e-79732856f2f3.mp4
+
+
 # Algorithm Development Procedure
 The code was relatively simple, but the procedure needed a little contemplation.
 <br>  
