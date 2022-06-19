@@ -47,6 +47,7 @@ These are some of the **conditions & procedures** when suggesting vocabularies:
 - Record the vocabulary input date and the date when I checked the memorization completed box for further analysis
 
 <br>  
+<br>  
 
 
 
