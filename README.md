@@ -9,11 +9,11 @@ Thus, I decided to test the hypothesis of the Psychology Professor and create an
 <br>  
 
 # Purpose & Goal
-- **The total time spent** learning new vocabulary is the key component of this project. Instead of spending too much time learning & remembering, the goal is to periodically expose each vocabulary to my brain a total of 7 times. There will be three notifications a day(morning, afternoon, and night) suggesting five vocabularies each time. Also, when the vocabs are suggested via Slack message, I will spend less than 15 seconds relearning them. Thus, the ultimate goal is to spend less than a minute every day(including all three notifications) to own hundreds or even thousands of vocabulary in the future.
+- **The total time spent** learning new vocabulary is the key component of this project. Instead of spending too much time learning & remembering, the goal is to periodically expose each vocabulary to my brain a total of 7 times. There will be three notifications a day(morning, afternoon, and night) suggesting an appropriate number of vocabulary each time. Also, when the vocabs are notified via Slack, I will spend less than 1 minute relearning them. Thus, the ultimate goal is to spend less than 3 minutes every day(including all three notifications) to master hundreds or even thousands of vocabulary in the future.
 - After the seven exposures, each vocabulary will be moved to another database where I will test myself whether or not I can create meaningful sentences and test my knowledge of the learned vocabs. Then, depending on my confidence level, I will rate each from 1 to 5 to further analyze the algorithm's efficiency.
     - ⭐️⭐️⭐️⭐️⭐️: Complete mastery of the vocab
     - ⭐️⭐️⭐️⭐: Need 1 or 2 more exposures to reach complete mastery
-    - ⭐️⭐️⭐️: Know the meaning, but cannot effectively utilize in conversations
+    - ⭐️⭐️⭐️: Know the meaning but cannot effectively utilize it in conversations
     - ⭐️⭐️: Understand the connotation
     - ⭐️: Unclear
 
@@ -33,11 +33,14 @@ Connecting to Slack API allows to set up timed notifications for the exposures o
 ### 3. Connect to Oxford Dictionary API
 Although there exists a PyDictionary module that allows direct retrieval of vocabularies, connecting to the Oxford Dictionary API provides a broader range of words and definitions. Also, the Oxford Dictionary generates vocab examples that will help comprehend the word's meaning. 
 
-### 4. Write Smart (Vocabluary) Suggesting Algorithm 
+### 4. Write Smart (Vocabulary) Suggesting Algorithm 
 These are some of the **conditions & procedures** when suggesting vocabularies:
 - Sort the vocabularies with minimum counts(exposures) so that suggestions are not clustered
 - Eliminate redundant or consecutive suggestions
-- Suggest a total of 15 vocabularies a day divided into 3 sections: morning, afternoon, and night
+- Find an appropriate number of vocabularies to suggest
+    - Depending on how many vocabs are on the waiting list, the number of suggestions will change accordingly
+    - The reason for not having a fixed number of suggestions is to prevent the cloggage of too many vocabularies on the waitlist.  
+- Suggest vocabularies a day divided into three sections: morning, afternoon, and night
 - Add the number of exposure by one every time each vocabulary is exposed to my brain
-- Update above changes to the Notion Vocabulary database
+- Update the above changes to the Notion Vocabulary database
 - Record the vocabulary input date and the date when I checked the memorization completed box for further analysis
