@@ -37,9 +37,9 @@ Although there exists a PyDictionary module that allows direct retrieval of voca
 These are some of the **conditions & procedures** when suggesting vocabularies:
 - Sort the vocabularies with minimum counts(exposures) so that suggestions are not clustered
 - Eliminate redundant or consecutive suggestions
-- Find an appropriate number of vocabularies to suggest
+- Find **an appropriate number of vocabularies** to suggest
     - Depending on how many vocabs are on the waiting list, the number of suggestions will change accordingly
-    - The reason for not having a fixed number of suggestions is to prevent the cloggage of too many vocabularies on the waitlist.  
+    - The reason for not having a fixed number of suggestions is to prevent the cloggage of too many vocabularies on the waitlist
 - Suggest vocabularies a day divided into three sections: morning, afternoon, and night
 - Add the number of exposure by one every time each vocabulary is exposed to my brain
 - Update the above changes to the Notion Vocabulary database
