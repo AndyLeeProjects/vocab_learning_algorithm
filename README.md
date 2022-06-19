@@ -21,11 +21,6 @@ Thus, I decided to test the hypothesis of the Psychology Professor and create an
 <br>  
 
 
-
-https://user-images.githubusercontent.com/84836749/174498756-449be7fd-045f-4c55-ab07-4f8227e26f6f.mp4
-
-
-
 # Algorithm Development Procedure
 The code was relatively simple, but the procedure needed a little contemplation.
 <br>  
@@ -50,3 +45,15 @@ These are some of the **conditions & procedures** when suggesting vocabularies:
 - Add the number of exposure by one every time each vocabulary is exposed to my brain
 - Update the above changes to the Notion Vocabulary database
 - Record the vocabulary input date and the date when I checked the memorization completed box for further analysis
+
+<br>  
+
+
+
+# Automation Video & Slack Notification
+
+https://user-images.githubusercontent.com/84836749/174498756-449be7fd-045f-4c55-ab07-4f8227e26f6f.mp4
+
+
+
+
