@@ -31,8 +31,8 @@ I would simply go into the Notion application and type in the vocabulary I wish 
 ### 2. Connect to Slack API
 Connecting to Slack API allows to set up timed notifications for the exposures of the vocabularies. 
 
-### 3. Connect to Oxford Dictionary API
-Although there exists a PyDictionary module that allows direct retrieval of vocabularies, connecting to the Oxford Dictionary API provides a broader range of words and definitions. Also, the Oxford Dictionary generates vocab examples that will help comprehend the word's meaning. 
+### 3. Connect to [Lingua Robot(Rapid API)](https://rapidapi.com/rokish/api/lingua-robot/details)
+Although there exists a PyDictionary module that allows direct retrieval of vocabularies, connecting to the Lingua Robot API provides a broader range of words and definitions. Also, the it generates vocab examples & synonyms that will help the overall comprehension of the word's meaning. 
 
 ### 4. Write Smart (Vocabulary) Suggesting Algorithm 
 These are some of the **conditions & procedures** when suggesting vocabularies:
