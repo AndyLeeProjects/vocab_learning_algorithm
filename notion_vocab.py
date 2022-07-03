@@ -10,8 +10,12 @@ import numpy as np
 import random as random
 from datetime import date
 from datetime import datetime
-import sys
-sys.path.append('C:\\NotionUpdate\\progress')
+import sys, os
+if os.name == 'posix':
+    sys.path.append('/Users/andylee/Desktop/git_prepFile')
+else:
+    sys.path.append('C:\\NotionUpdate\\progress')
+
 from secret import secret
 import pandas as pd
 
@@ -297,6 +301,7 @@ class Connect_Notion:
             # 3. Update count +1 
                 # If the exposure count reaches 7, move to conscious DB
         for i in range(len(new_selection_vocab)):
+            print("Updating : [", new_selection_vocab[i], "]")
             
             # Send the learned vocabs back to waitlist
             try:
@@ -317,54 +322,62 @@ class Connect_Notion:
                 Connect_Notion.updateData_count(today_count[i], today_pageId[i], headers)
             except:
                 pass
+            print("Completed\n")
         
 
         
         return today_vocabs, today_source, today_count
 
     
-    def connect_OxfordAPI(self, vocabs, app_id, app_key):
-        endpoint = "entries"
-        language_code = "en-us"
+    def connect_LinguaAPI(self, vocabs, api_key):
 
         vocab_dic = {}
         for vocab in vocabs:
-            url = "https://od-api.oxforddictionaries.com/api/v2/" + endpoint + "/" + language_code + "/" + vocab.lower()
-            r = requests.get(url, headers = {"app_id": app_id, "app_key": app_key})
-            data = json.loads(r.text)
+            url = "https://lingua-robot.p.rapidapi.com/language/v1/entries/en/" + vocab.lower().strip(' ')
+            headers = {
+            	"X-RapidAPI-Key": api_key,
+            	"X-RapidAPI-Host": "lingua-robot.p.rapidapi.com"
+            }
             
+            response = requests.request("GET", url, headers=headers)
+            data = json.loads(response.text)
+
+            
+
             # DEFINE vocab_info
             # try: Some vocabuarlies do not have definitions (ex: fugazi)
             try:
-                vocab_info = data['results'][0]['lexicalEntries'][0]['entries'][0]['senses']
-            except:
-                vocab_info = None
-            
-            # GET EXAMPLES
-            # try: Some definitions do not contain any examples in Oxford Dictionary
-            try:
-                examples = [vocab_info[i]['examples'][0]['text']
-                        for i in range(len(vocab_info))]
-            except:
+                vocab_dat = data['entries'][0]['lexemes']
+            except IndexError:
+                vocab_dat = None
+                definitions = None
+                synonyms = None
                 examples = None
             
-            # GET SYNONYMS
-            # try: If synonyms are not in Oxford Dictionary, output None
-            try:
-                synonyms = [vocab_info[0]['synonyms'][i]['text']
-                            for i in range(len(vocab_info[0]['synonyms']))]
-                if len(synonyms) > 5:
-                    synonyms = synonyms[:4]
-            except:
-                synonyms = None
+            if vocab_dat != None:
+                # GET DEFINITIONS
+                # try: If the definition is not in Lingua Dictionary, output None
             
-            # GET DEFINITIONS
-            # try: If the definition is not in Oxford Dictionary, output None
-            try:    
-                definitions = [vocab_info[i]['definitions'][0]
-                            for i in range(len(vocab_info))]
-            except:
-                definitions = None
+                definitions = [vocab_dat[j]['senses'][i]['definition']
+                               for j in range(len(vocab_dat)) for i in range(len(vocab_dat[j]['senses']))]
+                definitions = definitions[:3]
+            
+                
+                # GET SYNONYMS
+                # try: If synonyms are not in Lingua Dictionary, output None
+                try:
+                    synonyms = [vocab_dat[j]['synonymSets'][i]['synonyms']
+                                for j in range(len(vocab_dat)) for i in range(len(vocab_dat[j]['synonymSets']))]
+                except KeyError:
+                    synonyms = None
+                
+                # GET EXAMPLES
+                try:
+                    examples = [vocab_dat[j]['senses'][i]['usageExamples']
+                            for j in range(len(vocab_dat)) for i in range(len(vocab_dat[j]['senses'])) \
+                            if 'usageExamples' in vocab_dat[j]['senses'][i].keys()]
+                except:
+                    examples = None
             vocab_dic.setdefault(vocab,[]).append({'definitions':definitions,
                                                    'examples':examples,
                                                    'synonyms':synonyms})
@@ -395,20 +408,22 @@ class Connect_Notion:
                 
                 # Write Synonyms
                 if all_sy != None:
-                    message += '\nSynonyms: '
-                    for synonym in all_sy:
-                        message += synonym + ', '
+                    message += '\nSynonyms: ' + all_sy[0][0]
+                    for synonym in all_sy[1:]:
+                        message += ', ' + synonym[0]
                     message += '\n'
                 
                 # Write Examples
-                if all_ex != None:
+                print(all_ex)
+                if all_ex != []:
                     message += '\nExample: \n'
                     
                     for example in range(len(all_ex)):
-                        message += '\t - ' +  all_ex[example].strip('\n ') + '\n'
+                        message += '\t - ' +  all_ex[0][example].strip('\n ') + '\n'
                                     
             except:
-                message += 'None\n' 
+                print('None')
+                pass
             message += '\n\n'
             c += 1
         
@@ -451,7 +466,7 @@ projects_data = Cnotion.get_projects_data(data, projects)
 total_vocab_sug = Cnotion.adjust_suggestionRate(projects_data, total_vocab_sug)
 
 new_vocab, source, count = Cnotion.execute_update(projects_data, headers)
-vocab_dic = Cnotion.connect_OxfordAPI(new_vocab, secret.oxford_API("api_id"), secret.oxford_API("api_key"))
+vocab_dic = Cnotion.connect_LinguaAPI(new_vocab, secret.lingua_API('API Key'))
 Cnotion.send_vocab(new_vocab, vocab_dic, source, count)
 
 
