@@ -13,6 +13,7 @@ from datetime import datetime
 import sys
 sys.path.append('C:\\NotionUpdate\\progress')
 from secret import secret
+import pandas as pd
 
 token = secret.vocab("token")
 databaseId = secret.vocab("databaseId")
@@ -90,17 +91,20 @@ class Connect_Notion:
     def next_page(self, data):
         readUrl = f"https://api.notion.com/v1/databases/{databaseId}/query"
         next_cur = data['next_cursor']
-        while data['has_more']:
-            data['start_cursor'] = next_cur
-            data_hidden = json.dumps(data)
-            data_hidden = requests.post(readUrl, headers= headers, data= data_hidden).json() # Gets the next 100 results
-
-            
-            next_cur = data_hidden['next_cursor']
-            
-            data["results"] += data_hidden["results"]
-            if next_cur is None:
-                break
+        try:
+            while data['has_more']:
+                data['start_cursor'] = next_cur
+                data_hidden = json.dumps(data)
+                data_hidden = requests.post(readUrl, headers= headers, data= data_hidden).json() # Gets the next 100 results
+    
+                
+                next_cur = data_hidden['next_cursor']
+                
+                data["results"] += data_hidden["results"]
+                if next_cur is None:
+                    break
+        except:
+            pass
         return data
 
         
@@ -170,11 +174,29 @@ class Connect_Notion:
         
 
 
+    def adjust_suggestionRate(self, projects_data, total_vocab_sug):
         
-    
+        adj_suggest_rate = 18
+        
+        # The purpose for this function is to find an appropriate rate for daily suggestions.
+        # This is to prevent congestion caused by too many vocabs on the waitlist compared to 
+        # the vocabs being suggested. 
+        
+        vocab_df = pd.DataFrame(projects_data)
+        
+        # Get total number of vocabs waiting to be suggested
+        tot_vocab_watiList = len(vocab_df[vocab_df['Conscious'] == False])
+        
+        # If the waitlist is over 100, adjust the suggestion rate 
+        if tot_vocab_watiList > 100:
+            total_vocab_sug = round(tot_vocab_watiList / adj_suggest_rate)
+        else:
+            pass
+        
+        return total_vocab_sug
+        
 
     def execute_update(self, projects_data, headers):
-        
         # Find where next indexes are
         today_index = [i for i in range(len(projects_data['Vocab']))
                        if projects_data["Next"][i]=="Next"]
@@ -186,6 +208,7 @@ class Connect_Notion:
                         if projects_data["Next"][i]=="Next"]
         
         count_min = min(projects_data['Count'])
+        
         
         new_selection_index = []
         must_review_vocabs = []
@@ -273,11 +296,22 @@ class Connect_Notion:
             # 2.Change Waitlist -> next
             # 3. Update count +1 
                 # If the exposure count reaches 7, move to conscious DB
-        for i in range(total_vocab_sug):
-            # Prevent an error caused by changing the total number of vocab suggestions
+        for i in range(len(new_selection_vocab)):
+            
+            # Send the learned vocabs back to waitlist
             try:
                 Connect_Notion.updateData_to_waitlist(today_pageId[i], headers)
+            except:
+                pass
+            
+            # Update new selected vocabs
+            try:
                 Connect_Notion.updateData_to_next(new_selection_pageId[i], headers)
+            except:
+                pass
+            
+            # If the vocab count reaches assigned total_exposure, send it to a separate DB
+            try:
                 if today_count[i] >= total_exposures:
                     Connect_Notion.move_to_conscious(today_pageId[i], headers)
                 Connect_Notion.updateData_count(today_count[i], today_pageId[i], headers)
@@ -407,9 +441,14 @@ print("Retrieving Data...")
 print()
 Cnotion = Connect_Notion()
 data = Cnotion.readDatabase(databaseId, headers)
+
+# Notion only outputs 100 elements at a time so if it goes over, we need to 
+# go to the next page in the database
 data = Cnotion.next_page(data)
+
 projects = Cnotion.get_projects_titles(data)
 projects_data = Cnotion.get_projects_data(data, projects)
+total_vocab_sug = Cnotion.adjust_suggestionRate(projects_data, total_vocab_sug)
 
 new_vocab, source, count = Cnotion.execute_update(projects_data, headers)
 vocab_dic = Cnotion.connect_OxfordAPI(new_vocab, secret.oxford_API("api_id"), secret.oxford_API("api_key"))
