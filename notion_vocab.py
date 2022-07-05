@@ -360,7 +360,7 @@ class Connect_Notion:
             
                 definitions = [vocab_dat[j]['senses'][i]['definition']
                                for j in range(len(vocab_dat)) for i in range(len(vocab_dat[j]['senses']))]
-                definitions = definitions[:3]
+                definitions = definitions[:5]
             
                 
                 # GET SYNONYMS
