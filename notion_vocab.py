@@ -458,8 +458,8 @@ class Connect_Notion:
             'text': message
         }
         
-        #requests.post(url='https://slack.com/api/chat.postMessage',
-        #              data=data)
+        requests.post(url='https://slack.com/api/chat.postMessage',
+                      data=data)
 
     def is_time_between(begin_time, end_time, check_time=None):
         # If check time is not given, default to current UTC time
