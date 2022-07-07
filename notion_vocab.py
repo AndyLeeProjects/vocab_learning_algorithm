@@ -251,12 +251,15 @@ class Connect_Notion:
 
             # Sometimes there DNE where all of these conditions are met
             try:
-
+                
+                if ':' in projects_data['Source'][ind]:
+                    source_name = projects_data['Source'][ind].split(':')[0]
+                
                 # 1st Condition (Strong: Most prioritized)
                 if projects_data['Count'][ind] == vocab_count and \
                    projects_data['Conscious'][ind] == False and \
                    date.today().strftime('%Y-%m-%d') != projects_data['Last_Edited'][ind] and \
-                   projects_data['Source'][ind] in priority_unique:
+                   source_name in priority_unique:
 
                     new_selection_index.append(ind)
 
