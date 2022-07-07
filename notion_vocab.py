@@ -81,6 +81,16 @@ class Connect_Notion:
             elif p=="pageId":
                 projects_data[p] = [data['results'][i]['id']
                                     for i in range(len(data["results"]))]
+            elif p=="Context":
+                temp = []
+                for i in range(len(data["results"])):
+                    try:
+                        temp.append(data['results'][i]['properties'][p]['rich_text'][0]['text']['content'])
+                    except:
+                        temp.append(None)
+                
+                projects_data[p] = temp
+                
             elif p=="Last_Edited":
                 last_edited_dates = []
                 for i in range(len(data["results"])):
@@ -225,6 +235,7 @@ class Connect_Notion:
             # not in next_index: suggest different words than the day before
             # not in new_source: suggest unique 3 words
         c = 0
+        error_c = 0
         least_count = count_min
         while True:
             if len(projects_data['Vocab']) < c + 1 and count_min == np.max(projects_data['Count']):
@@ -249,6 +260,10 @@ class Connect_Notion:
                     pass
                 count_min += 1                    
             c += 1
+            error_c += 1
+            if error_c > 500:
+                raise ValueError('Not enough Vocabularies (Last Edited)')
+
         
         # random number between 0 to total length of vocabularies with the minimum count
         if len(new_selection_index) == total_vocab_sug:
@@ -279,6 +294,7 @@ class Connect_Notion:
         today_vocabs = []
         today_source = []
         today_count = []
+        today_context = []
         
         for i in range(total_vocab_sug):
             # Prevent an error caused by changing the total number of vocab suggestions
@@ -289,6 +305,7 @@ class Connect_Notion:
                 today_vocabs.append(projects_data['Vocab'][today_index[i]])
                 today_source.append(projects_data['Source'][today_index[i]])
                 today_count.append(projects_data['Count'][today_index[i]])
+                today_context.append(projects_data['Context'][today_index[i]])
             except:
                 pass
         
@@ -326,7 +343,7 @@ class Connect_Notion:
         
 
         
-        return today_vocabs, today_source, today_count
+        return today_vocabs, today_source, today_count, today_context
 
     
     def connect_LinguaAPI(self, vocabs, api_key):
@@ -386,7 +403,7 @@ class Connect_Notion:
 
 
     # Send a Message using Slack API
-    def send_vocab(self, vocabs, definitions, source, count):
+    def send_vocab(self, vocabs, definitions, source, count, context):
         
         line = '****************************************\n'
         message = "Vocabs: " + str(vocabs).strip('[]').replace('\'','') + '\n'
@@ -399,6 +416,8 @@ class Connect_Notion:
             message += line
             message += 'Vocab %d: ' % (c+1) + k + '\n'
             message += 'Source: ' + source[c] + '\n'
+            if context[c] != None:
+                message += 'Context: ' + context[c] + '\n'
             message += line
             message += 'Definition: \n' 
             try:
@@ -439,8 +458,8 @@ class Connect_Notion:
             'text': message
         }
         
-        requests.post(url='https://slack.com/api/chat.postMessage',
-                      data=data)
+        #requests.post(url='https://slack.com/api/chat.postMessage',
+        #              data=data)
 
     def is_time_between(begin_time, end_time, check_time=None):
         # If check time is not given, default to current UTC time
@@ -465,9 +484,10 @@ projects = Cnotion.get_projects_titles(data)
 projects_data = Cnotion.get_projects_data(data, projects)
 total_vocab_sug = Cnotion.adjust_suggestionRate(projects_data, total_vocab_sug)
 
-new_vocab, source, count = Cnotion.execute_update(projects_data, headers)
+new_vocab, source, count, context = Cnotion.execute_update(projects_data, headers)
 vocab_dic = Cnotion.connect_LinguaAPI(new_vocab, secret.lingua_API('API Key'))
-Cnotion.send_vocab(new_vocab, vocab_dic, source, count)
+
+Cnotion.send_vocab(new_vocab, vocab_dic, source, count, context)
 
 
 
