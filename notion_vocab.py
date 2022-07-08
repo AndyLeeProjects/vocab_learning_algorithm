@@ -252,6 +252,7 @@ class Connect_Notion:
             # Sometimes there DNE where all of these conditions are met
             try:
                 
+                # String Manipulation for the coherence of the Source names
                 if ':' in projects_data['Source'][ind]:
                     source_name = projects_data['Source'][ind].split(':')[0]
                 
