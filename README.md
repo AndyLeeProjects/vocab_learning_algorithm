@@ -38,13 +38,14 @@ Although there exists a PyDictionary module that allows direct retrieval of voca
 These are some of the **conditions & procedures** when suggesting vocabularies:
 - Sort the vocabularies with minimum counts(exposures) so that suggestions are not clustered
 - Eliminate redundant or consecutive suggestions
+- Prioritize the vocab category("Data Science", "Film", "Book", etc.) catered to the user's needs 
+    - When learning vocabularies, sometimes there exist words that need to be learned more urgently than others. This feature takes care of that. 
 - Find **an appropriate number of vocabularies** to suggest
-    - Depending on how many vocabs are on the waiting list, the number of suggestions will change accordingly
+    - Depending on how many vocabs are on the waiting list, the number of suggestions will adjust accordingly
     - The reason for not having a fixed number of suggestions is to prevent the cloggage of too many vocabularies on the waitlist
 - Suggest vocabularies a day divided into three sections: morning, afternoon, and night
-- Add the number of exposure by one every time each vocabulary is exposed to my brain
+- Add the number of exposure by one every time each vocabulary is exposed
 - Update the above changes to the Notion Vocabulary database
-- Record the vocabulary input date and the date when I checked the memorization completed box for further analysis
 
 <br>  
 <br>  
