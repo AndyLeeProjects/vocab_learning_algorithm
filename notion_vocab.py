@@ -262,7 +262,7 @@ class Connect_Notion:
                    date.today().strftime('%Y-%m-%d') != projects_data['Last_Edited'][ind] and \
                    source_name in priority_unique:
 
-                    new_selection_index.append(ind)
+                    priority_vocabs.append(ind)
 
                 # 2nd Condition (Medium)
                 elif projects_data['Count'][ind] == vocab_count and \
@@ -283,15 +283,8 @@ class Connect_Notion:
             # completely looped through
             except:
                 ind = 0
-
-                # vocab_count in [0,1]: Recently added, so add maximum 3 to priority_vocabs list
-                if vocab_count in [0, 1] and len(new_selection_index) < 4:
-                    priority_vocabs = new_selection_index
-                elif vocab_count in [0, 1] and len(new_selection_index) >= 4:
-                    priority_vocabs = new_selection_index[:2]
-                else:
-                    pass
                 vocab_count += 1
+                pass
             ind += 1
 
         return new_selection_index, priority_vocabs
@@ -319,16 +312,19 @@ class Connect_Notion:
             random_vocabs = []
 
             # If priority_vocabs is not empty, add them first before adding other vocabularies
-            if priority_vocabs != []:
+            if len(priority_vocabs) <= round(total_vocab_sug/2):
                 random_vocabs = priority_vocabs
+            else:
+                random_vocabs = priority_vocabs[:round(total_vocab_sug/2)]
 
-            # Run as many times to satisfy 3 random words from the new_selection pool
+            # Run as many times to satisfy n(total_vocab_sug) random words from the new_selection pool
             while True:
-                ind = random.choices(new_selection_index)
+                # outputs random value in new_selection_index
+                ind = random.choices(new_selection_index)[0]
                 if len(random_vocabs) > total_vocab_sug-1:
                     break
-                if ind[0] not in random_vocabs:
-                    random_vocabs.append(ind[0])
+                if ind not in random_vocabs:
+                    random_vocabs.append(ind)
             new_selection_index = random_vocabs
 
         # select a new vocab pageId randomly
