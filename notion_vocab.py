@@ -35,7 +35,7 @@ total_exposures = 6
 
 
 class Connect_Notion:
-
+    
     def is_time_between(begin_time, end_time, check_time=None):
         # If check time is not given, default to current UTC time
         check_time = check_time or datetime.now().time()
@@ -321,15 +321,14 @@ class Connect_Notion:
             while True:
                 # outputs random value in new_selection_index
                 ind = random.choices(new_selection_index)[0]
-                if len(random_vocabs) > total_vocab_sug-1:
+                if len(random_vocabs) >= total_vocab_sug:
                     break
                 if ind not in random_vocabs:
                     random_vocabs.append(ind)
             new_selection_index = random_vocabs
 
-        # select a new vocab pageId randomly
-        new_selection_pageId = [projects_data['pageId'][i]
-                                for i in new_selection_index]
+        # select a new vocab pageId with randomized index
+        new_selection_pageId = [projects_data['pageId'][i] for i in new_selection_index]
 
         # Store new & old vocabulary information for the Slack update
         new_selection_vocab = []
@@ -340,7 +339,7 @@ class Connect_Notion:
         next_count = []
         next_context = []
 
-        for i in range(total_vocab_sug):
+        for i in range(len(new_selection_index)):
             # Prevent an error caused by changing the total number of vocab suggestions
             try:
                 new_selection_vocab.append(
