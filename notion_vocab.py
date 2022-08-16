@@ -12,6 +12,7 @@ import random as random
 from datetime import date
 from datetime import datetime
 from datetime import timezone
+import numpy as np
 import sys
 import os
 if os.name == 'posix':
@@ -21,123 +22,37 @@ else:
 
 from secret import secret
 import pandas as pd
-
-token = secret.vocab("token")
-databaseId = secret.vocab("databaseId")
-headers = {
-    "Authorization": "Bearer " + token,
-    "Content-Type": "application/json",
-    "Notion-Version": "2021-05-13"
-}
-
-# Set total number of vocabulary suggestions & Exposures
+from Connect_NotionAPI import Notion_API as NAPI
 
 
 
 class Connect_Notion:
     
-    def __init__(self):
+    def __init__(self, database_id, token_key):
+        
+        # Get data from Notion_API.py
+        Notion = NAPI.connect_NotionDB(database_id, token_key)
+        vocab_data = Notion.retrieve_data()
+        self.vocab_data = vocab_data
+        
+        # slack access bot token
+        self.slack_token = secret.slack_token("slack_token")        
+
+        # linguistic API access Key
+        self.linguistic_ApiKey = secret.lingua_API('API Key')
+        
         self.total_vocab_sug = 5
         self.total_exposures = 6
+        
+        # Set Headers for Notion API
+        self.headers = {
+            "Authorization": "Bearer " + token_key,
+            "Content-Type": "application/json",
+            "Notion-Version": "2021-05-13"
+        }
+        
     
-    def readDatabase(self, databaseId, headers):
-        readUrl = f"https://api.notion.com/v1/databases/{databaseId}/query"
-
-        res = requests.request("POST", readUrl, headers=headers)
-        data = res.json()
-
-        with open('./db.json', 'w', encoding='utf8') as f:
-            json.dump(data, f, ensure_ascii=False)
-
-        return data
-
-    def get_projects_titles(self, data_json):
-        most_properties = [len(data_json['results'][i]['properties'])
-                           for i in range(len(data_json["results"]))]
-        return list(data_json["results"][np.argmax(most_properties)]["properties"].keys())+['pageId']
-
-    def get_projects_data(self, data, projects):
-        projects_data = {}
-        for p in projects:
-            if "Vocab" in p:
-                projects_data[p] = [data['results'][i]['properties'][p]['title'][0]['text']['content']
-                                    for i in range(len(data["results"]))]
-            elif p == 'Source':
-                projects_data[p] = [data['results'][i]['properties'][p]['multi_select'][0]['name']
-                                    for i in range(len(data["results"]))]
-            elif p == "Count":
-                projects_data[p] = [data['results'][i]['properties'][p]['number']
-                                    for i in range(len(data["results"]))]
-            elif p == "Next":
-                projects_data[p] = [data['results'][i]['properties'][p]['select']['name']
-                                    for i in range(len(data["results"]))]
-            elif p == "Conscious":
-                projects_data[p] = [data['results'][i]['properties'][p]['checkbox']
-                                    for i in range(len(data['results']))]
-            elif p == "pageId":
-                projects_data[p] = [data['results'][i]['id']
-                                    for i in range(len(data["results"]))]
-            elif p == "Created":
-                projects_data[p] = [datetime.fromisoformat(data['results'][i]['properties']['Created']['created_time'][:-1]).astimezone(timezone.utc)
-                                    for i in range(len(data["results"]))]
-            elif p == "Confidence Level":
-                temp = []
-                for i in range(len(data["results"])):
-                    try:
-                        temp.append(len(data['results'][i]['properties']['Confidence Level']['select']['name'])/2)
-                    except:
-                        temp.append(0)
-                projects_data[p] = temp
-                    
-            elif p == "Context":
-                temp = []
-                for i in range(len(data["results"])):
-                    try:
-                        temp.append(data['results'][i]['properties']
-                                    [p]['rich_text'][0]['text']['content'])
-                    except:
-                        temp.append(None)
-
-                projects_data[p] = temp
-
-            elif p == "Last_Edited":
-                last_edited_dates = []
-                for i in range(len(data["results"])):
-                    date = datetime.fromisoformat(
-                        data['results'][i]['properties'][p]['last_edited_time'][:-1] + '+00:00')
-                    date = date.strftime('%Y-%m-%d')
-                    last_edited_dates.append(date)
-                projects_data[p] = last_edited_dates
-        return projects_data
-
-    # Notion API limits a list result of 100 elements next_page() helps retrieve ALL data
-
-    def next_page(self, data):
-        readUrl = f"https://api.notion.com/v1/databases/{databaseId}/query"
-        next_cur = data['next_cursor']
-        try:
-            page_num = 1
-            while data['has_more']:
-                print("Reading page number {page_num}")
-                print(next_cur)
-                print()
-                data['start_cursor'] = next_cur
-                data_hidden = json.dumps(data)
-                
-                # Gets the next 100 results
-                data_hidden = requests.post(
-                    readUrl, headers=headers, data=data_hidden).json()
-                
-                data["results"] += data_hidden["results"]
-                next_cur = data_hidden['next_cursor']
-                page_num += 1
-                if next_cur is None:
-                    break
-        except:
-            pass
-        return data
-
-    def updateData_to_next(pageId, headers):
+    def updateData_to_next(self, pageId):
         updateUrl_to_next = f"https://api.notion.com/v1/pages/{pageId}"
 
         updateData_to_next = {
@@ -152,9 +67,9 @@ class Connect_Notion:
         }
 
         response = requests.request("PATCH", updateUrl_to_next,
-                                    headers=headers, data=json.dumps(updateData_to_next))
+                                    headers=self.headers, data=json.dumps(updateData_to_next))
 
-    def updateData_to_waitlist(pageId, headers):
+    def updateData_to_waitlist(self, pageId):
         updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
 
         updateData_to_waitlist = {
@@ -169,9 +84,9 @@ class Connect_Notion:
         }
 
         response = requests.request("PATCH", updateUrl_to_waitlist,
-                                    headers=headers, data=json.dumps(updateData_to_waitlist))
+                                    headers=self.headers, data=json.dumps(updateData_to_waitlist))
 
-    def updateData_count(count_min, pageId, headers):
+    def updateData_count(self, count_min, pageId):
         updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
         updateData_count = {
             "properties": {
@@ -181,9 +96,9 @@ class Connect_Notion:
             }}
 
         response = requests.request("PATCH", updateUrl_to_waitlist,
-                                    headers=headers, data=json.dumps(updateData_count))
+                                    headers=self.headers, data=json.dumps(updateData_count))
 
-    def move_to_conscious(pageId, headers):
+    def move_to_conscious(self, pageId):
         # After reaching 7 exposures, the vocabulary will moved to other DB, called "conscious"
         updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
         updateData_count = {
@@ -194,9 +109,10 @@ class Connect_Notion:
             }}
 
         response = requests.request("PATCH", updateUrl_to_waitlist,
-                                    headers=headers, data=json.dumps(updateData_count))
+                                    headers=self.headers, data=json.dumps(updateData_count))
+        
 
-    def adjust_suggestionRate(self, projects_data):
+    def adjust_suggestionRate(self):
 
         adj_suggest_rate = 18
 
@@ -204,7 +120,7 @@ class Connect_Notion:
         # This is to prevent congestion caused by too many vocabs on the waitlist compared to
         # the vocabs being suggested.
 
-        vocab_df = pd.DataFrame(projects_data)
+        vocab_df = pd.DataFrame(self.vocab_data)
 
         # Get total number of vocabs waiting to be suggested
         tot_vocab_watiList = len(vocab_df[vocab_df['Conscious'] == False])
@@ -215,9 +131,7 @@ class Connect_Notion:
         else:
             pass
 
-        return self.total_vocab_sug
-
-    def find_prioritySource(projects_data):
+    def find_prioritySource(self):
         """
         There are vocabularies that need to be memorized urgently.
         For those sources, I have marked their sources with Asterisk sign 
@@ -226,17 +140,17 @@ class Connect_Notion:
         These prioritized sources will be used in select_vocabSuggestions
         where it will fill vocabs with these sources first. 
         """
-        source = pd.DataFrame(projects_data['Source'], columns=["Source"])
+        source = pd.DataFrame(self.vocab_data['Source'], columns=["Source"])
         source = source.drop_duplicates()
 
-        priority_unique = []
+        self.priority_unique = []
         for source in source['Source']:
-            if source not in priority_unique and '*' in source:
-                priority_unique.append(source)
+            if source not in self.priority_unique and '*' in source:
+                self.priority_unique.append(source)
 
-        return priority_unique
 
-    def select_vocabSuggestions(projects_data, count_min, next_index):
+
+    def select_vocabSuggestions(self, count_min, next_index):
         """
         This function is the algorithm that smartly selects vocabulary suggestions.
         The following are some of the conditions.
@@ -248,8 +162,10 @@ class Connect_Notion:
             - suggest unique words (No redundancy within a suggestion)
 
         """
-
-        priority_unique = Connect_Notion.find_prioritySource(projects_data)
+        
+        # Get high priority vocabularies
+        Cnotion.find_prioritySource()
+        
         new_selection_index = []
         priority_vocabs = []
 
@@ -259,34 +175,34 @@ class Connect_Notion:
         ind = 0
         vocab_count = count_min
         while True:
-            if len(projects_data['Vocab']) < ind + 1 and vocab_count == np.max(projects_data['Count']):
+            if len(self.vocab_data['Vocab']) < ind + 1 and vocab_count == np.max(self.vocab_data['Count']):
                 break
 
             # Sometimes there DNE where all of these conditions are met
             try:
                 
                 # String Manipulation for the coherence of the Source names
-                if ':' in projects_data['Source'][ind]:
-                    source_name = projects_data['Source'][ind].split(':')[0]
+                if ':' in self.vocab_data['Source'][ind]:
+                    source_name = self.vocab_data['Source'][ind].split(':')[0]
                 
                 # 1st Condition (Strong: Most prioritized)
-                if projects_data['Count'][ind] == vocab_count and \
-                   projects_data['Conscious'][ind] == False and \
-                   date.today().strftime('%Y-%m-%d') != projects_data['Last_Edited'][ind] and \
-                   source_name in priority_unique:
+                if self.vocab_data['Count'][ind] == vocab_count and \
+                   self.vocab_data['Conscious'][ind] == False and \
+                   date.today().strftime('%Y-%m-%d') != self.vocab_data['Last_Edited'][ind] and \
+                   source_name in self.priority_unique:
 
                     priority_vocabs.append(ind)
 
                 # 2nd Condition (Medium)
-                elif projects_data['Count'][ind] == vocab_count and \
-                    projects_data['Conscious'][ind] == False and \
-                        date.today().strftime('%Y-%m-%d') != projects_data['Last_Edited'][ind]:
+                elif self.vocab_data['Count'][ind] == vocab_count and \
+                    self.vocab_data['Conscious'][ind] == False and \
+                        date.today().strftime('%Y-%m-%d') != self.vocab_data['Last_Edited'][ind]:
 
                     new_selection_index.append(ind)
 
                 # 3rd Condition (Weak)
-                elif projects_data['Count'][ind] == vocab_count and \
-                        projects_data['Conscious'][ind] == False and \
+                elif self.vocab_data['Count'][ind] == vocab_count and \
+                        self.vocab_data['Conscious'][ind] == False and \
                         ind not in new_selection_index and \
                         ind not in next_index:
 
@@ -299,24 +215,25 @@ class Connect_Notion:
                 vocab_count += 1
                 pass
             ind += 1
-
+    
         return new_selection_index, priority_vocabs
 
-    def execute_update(self, projects_data, headers):
+
+    def execute_update(self):
         # Find where next indexes are
-        next_index = [i for i in range(len(projects_data['Vocab']))
-                      if projects_data["Next"][i] == "Next"]
+        next_index = [i for i in range(len(self.vocab_data['Vocab']))
+                      if self.vocab_data["Next"][i] == "Next"]
         # Find page Ids that matches Next's indexes
-        next_pageId = [projects_data["pageId"][i] for i in next_index
-                       if projects_data["Next"][i] == "Next"]
+        next_pageId = [self.vocab_data["pageId"][i] for i in next_index
+                       if self.vocab_data["Next"][i] == "Next"]
 
-        next_count = [projects_data["Count"][i] for i in next_index
-                      if projects_data["Next"][i] == "Next"]
+        next_count = [self.vocab_data["Count"][i] for i in next_index
+                      if self.vocab_data["Next"][i] == "Next"]
 
-        count_min = min(projects_data['Count'])
+        count_min = min(self.vocab_data['Count'])
+        
+        new_selection_index, priority_vocabs = Cnotion.select_vocabSuggestions(count_min, next_index)
 
-        new_selection_index, priority_vocabs = Connect_Notion.select_vocabSuggestions(
-            projects_data, count_min, next_index)
 
         # random number between 0 to total length of vocabularies with the minimum count
         if len(new_selection_index) == self.total_vocab_sug:
@@ -334,14 +251,14 @@ class Connect_Notion:
             while True:
                 # outputs random value in new_selection_index
                 ind = random.choices(new_selection_index)[0]
-                if len(random_vocabs) >= total_vocab_sug:
+                if len(random_vocabs) >= self.total_vocab_sug:
                     break
                 if ind not in random_vocabs:
                     random_vocabs.append(ind)
             new_selection_index = random_vocabs
 
         # select a new vocab pageId with randomized index
-        new_selection_pageId = [projects_data['pageId'][i] for i in new_selection_index]
+        new_selection_pageId = [self.vocab_data['pageId'][i] for i in new_selection_index]
 
         # Store new & old vocabulary information for the Slack update
         new_selection_vocab = []
@@ -356,15 +273,15 @@ class Connect_Notion:
             # Prevent an error caused by changing the total number of vocab suggestions
             try:
                 new_selection_vocab.append(
-                    projects_data['Vocab'][new_selection_index[i]])
+                    self.vocab_data['Vocab'][new_selection_index[i]])
                 new_selection_source.append(
-                    projects_data['Source'][new_selection_index[i]])
+                    self.vocab_data['Source'][new_selection_index[i]])
                 new_selection_count.append(
-                    projects_data['Count'][new_selection_index[i]])
-                next_vocabs.append(projects_data['Vocab'][next_index[i]])
-                next_source.append(projects_data['Source'][next_index[i]])
-                next_count.append(projects_data['Count'][next_index[i]])
-                next_context.append(projects_data['Context'][next_index[i]])
+                    self.vocab_data['Count'][new_selection_index[i]])
+                next_vocabs.append(self.vocab_data['Vocab'][next_index[i]])
+                next_source.append(self.vocab_data['Source'][next_index[i]])
+                next_count.append(self.vocab_data['Count'][next_index[i]])
+                next_context.append(self.vocab_data['Context'][next_index[i]])
             except:
                 pass
 
@@ -377,7 +294,6 @@ class Connect_Notion:
         # 3. Update count +1
         # If the exposure count reaches 7, move to conscious DB
         
-        print(next_pageId)
         for i in range(len(next_index)):
             try:
                 nv = next_vocabs[i]
@@ -389,38 +305,37 @@ class Connect_Notion:
             
             # Send the learned vocabs back to waitlist
             try:
-                Connect_Notion.updateData_to_waitlist(next_pageId[i], headers)
+                Cnotion.updateData_to_waitlist(next_pageId[i])
             except:
                 pass
 
             # Update new selected vocabs
             try:
-                Connect_Notion.updateData_to_next(
-                    new_selection_pageId[i], headers)
+                Cnotion.updateData_to_next(new_selection_pageId[i])
             except:
                 pass
 
             # If the vocab count reaches assigned total_exposure, send it to a separate DB
             try:
                 if next_count[i] >= self.total_exposures:
-                    Connect_Notion.move_to_conscious(next_pageId[i], headers)
-                Connect_Notion.updateData_count(
-                    next_count[i], next_pageId[i], headers)
+                    Cnotion.move_to_conscious(next_pageId[i])
+                Cnotion.updateData_count(next_count[i], next_pageId[i])
             except:
                 pass
         
-            
+        self.vocabs = next_vocabs
+        self.sources = next_source
+        self.counts = next_count
+        self.contexts = next_context
 
-        return next_vocabs, next_source, next_count, next_context
+    def connect_LinguaAPI(self):
 
-    def connect_LinguaAPI(self, vocabs, api_key):
-
-        vocab_dic = {}
-        for vocab in vocabs:
+        self.vocab_dic = {}
+        for vocab in self.vocabs:
             url = "https://lingua-robot.p.rapidapi.com/language/v1/entries/en/" + \
                 vocab.lower().strip(' ')
             headers = {
-                "X-RapidAPI-Key": api_key,
+                "X-RapidAPI-Key": self.linguistic_ApiKey,
                 "X-RapidAPI-Host": "lingua-robot.p.rapidapi.com"
             }
 
@@ -460,32 +375,34 @@ class Connect_Notion:
                                 if 'usageExamples' in vocab_dat[j]['senses'][i].keys()]
                 except:
                     examples = None
-            vocab_dic.setdefault(vocab, []).append({'definitions': definitions,
+            self.vocab_dic.setdefault(vocab, []).append({'definitions': definitions,
                                                    'examples': examples,
                                                     'synonyms': synonyms})
-        return vocab_dic
+
 
     # Send a Message using Slack API
 
-    def send_vocab(self, vocabs, definitions, source, count, context):
+    def send_vocab(self):
 
         line = '****************************************\n'
-        message = "Vocabs: " + str(vocabs).strip('[]').replace('\'', '') + '\n'
+        message = "Vocabs: " + str(self.vocabs).strip('[]').replace('\'', '') + '\n'
 
         c = 0
-        for k in vocab_dic.keys():
-            all_def = vocab_dic[k][0]['definitions']
-            all_ex = vocab_dic[k][0]['examples']
-            all_sy = vocab_dic[k][0]['synonyms']
+        for k in self.vocab_dic.keys():
+            all_def = self.vocab_dic[k][0]['definitions']
+            all_ex = self.vocab_dic[k][0]['examples']
+            all_sy = self.vocab_dic[k][0]['synonyms']
             message += line
             message += 'Vocab %d: ' % (c+1) + k + '\n'
-            message += 'Source: ' + source[c] + '\n'
-            if context[c] != None:
-                message += 'Context: ' + context[c] + '\n'
+            message += 'Source: ' + self.sources[c] + '\n'
             message += line
-            message += 'Definition: \n'
+            
+            if self.contexts[c] != np.nan and self.contexts[c] != None: 
+                message += 'Context: ' + str(self.contexts[c]) + '\n'
             try:
                 # Write Definitions
+                if all_def != np.nan and all_def != None:
+                    message += 'Definition: \n'
                 for definition in range(len(all_def)):
                     message += '\t - ' + all_def[definition] + '\n'
 
@@ -511,11 +428,8 @@ class Connect_Notion:
 
         print(message)
 
-        # slack access bot token
-        slack_token = secret.slack_token("slack_token")
-
         data = {
-            'token': slack_token,
+            'token': self.slack_token,
             'channel': secret.slack_token("user_id"),    # User ID.
             'as_user': True,
             'text': message
@@ -523,23 +437,22 @@ class Connect_Notion:
 
         requests.post(url='https://slack.com/api/chat.postMessage',
                       data=data)
+        
+    def run_All(self):
+        print("Retrieving Data...")
+        print()
+        Cnotion.adjust_suggestionRate()
+        Cnotion.execute_update()
+        Cnotion.connect_LinguaAPI()
+        Cnotion.send_vocab()
 
 
-print("Retrieving Data...")
-print()
-Cnotion = Connect_Notion()
-data = Cnotion.readDatabase(databaseId, headers)
 
-# Notion only outputs 100 elements at a time so if it goes over, we need to
-# go to the next page in the database
-data = Cnotion.next_page(data)
 
-projects = Cnotion.get_projects_titles(data)
-projects_data = Cnotion.get_projects_data(data, projects)
-total_vocab_sug = Cnotion.adjust_suggestionRate(projects_data)
-#%%
-new_vocab, source, count, context = Cnotion.execute_update(
-    projects_data, headers)
-vocab_dic = Cnotion.connect_LinguaAPI(new_vocab, secret.lingua_API('API Key'))
 
-Cnotion.send_vocab(new_vocab, vocab_dic, source, count, context)
+# Suggest Vocabs 
+database_id = secret.vocab('databaseId')
+token_key = secret.notion_API("token")
+Cnotion = Connect_Notion(database_id, token_key)
+Cnotion.run_All()
+
