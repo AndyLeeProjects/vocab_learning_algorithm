@@ -11,6 +11,7 @@ import numpy as np
 import random as random
 from datetime import date
 from datetime import datetime
+from datetime import timezone
 import sys
 import os
 if os.name == 'posix':
@@ -30,20 +31,15 @@ headers = {
 }
 
 # Set total number of vocabulary suggestions & Exposures
-total_vocab_sug = 5
-total_exposures = 6
+
 
 
 class Connect_Notion:
     
-    def is_time_between(begin_time, end_time, check_time=None):
-        # If check time is not given, default to current UTC time
-        check_time = check_time or datetime.now().time()
-        if begin_time < end_time:
-            return check_time >= begin_time and check_time <= end_time
-        else:  # crosses midnight
-            return check_time >= begin_time or check_time <= end_time
-
+    def __init__(self):
+        self.total_vocab_sug = 5
+        self.total_exposures = 6
+    
     def readDatabase(self, databaseId, headers):
         readUrl = f"https://api.notion.com/v1/databases/{databaseId}/query"
 
@@ -81,6 +77,18 @@ class Connect_Notion:
             elif p == "pageId":
                 projects_data[p] = [data['results'][i]['id']
                                     for i in range(len(data["results"]))]
+            elif p == "Created":
+                projects_data[p] = [datetime.fromisoformat(data['results'][i]['properties']['Created']['created_time'][:-1]).astimezone(timezone.utc)
+                                    for i in range(len(data["results"]))]
+            elif p == "Confidence Level":
+                temp = []
+                for i in range(len(data["results"])):
+                    try:
+                        temp.append(len(data['results'][i]['properties']['Confidence Level']['select']['name'])/2)
+                    except:
+                        temp.append(0)
+                projects_data[p] = temp
+                    
             elif p == "Context":
                 temp = []
                 for i in range(len(data["results"])):
@@ -108,16 +116,21 @@ class Connect_Notion:
         readUrl = f"https://api.notion.com/v1/databases/{databaseId}/query"
         next_cur = data['next_cursor']
         try:
+            page_num = 1
             while data['has_more']:
+                print("Reading page number {page_num}")
+                print(next_cur)
+                print()
                 data['start_cursor'] = next_cur
                 data_hidden = json.dumps(data)
+                
                 # Gets the next 100 results
                 data_hidden = requests.post(
                     readUrl, headers=headers, data=data_hidden).json()
-
-                next_cur = data_hidden['next_cursor']
-
+                
                 data["results"] += data_hidden["results"]
+                next_cur = data_hidden['next_cursor']
+                page_num += 1
                 if next_cur is None:
                     break
         except:
@@ -183,7 +196,7 @@ class Connect_Notion:
         response = requests.request("PATCH", updateUrl_to_waitlist,
                                     headers=headers, data=json.dumps(updateData_count))
 
-    def adjust_suggestionRate(self, projects_data, total_vocab_sug):
+    def adjust_suggestionRate(self, projects_data):
 
         adj_suggest_rate = 18
 
@@ -198,11 +211,11 @@ class Connect_Notion:
 
         # If the waitlist is over 100, adjust the suggestion rate
         if tot_vocab_watiList > 100:
-            total_vocab_sug = round(tot_vocab_watiList / adj_suggest_rate)
+            self.total_vocab_sug = round(tot_vocab_watiList / adj_suggest_rate)
         else:
             pass
 
-        return total_vocab_sug
+        return self.total_vocab_sug
 
     def find_prioritySource(projects_data):
         """
@@ -306,16 +319,16 @@ class Connect_Notion:
             projects_data, count_min, next_index)
 
         # random number between 0 to total length of vocabularies with the minimum count
-        if len(new_selection_index) == total_vocab_sug:
+        if len(new_selection_index) == self.total_vocab_sug:
             pass
         else:
             random_vocabs = []
 
             # If priority_vocabs is not empty, add them first before adding other vocabularies
-            if len(priority_vocabs) <= round(total_vocab_sug/2):
+            if len(priority_vocabs) <= round(self.total_vocab_sug/2):
                 random_vocabs = priority_vocabs
             else:
-                random_vocabs = priority_vocabs[:round(total_vocab_sug/2)]
+                random_vocabs = priority_vocabs[:round(self.total_vocab_sug/2)]
 
             # Run as many times to satisfy n(total_vocab_sug) random words from the new_selection pool
             while True:
@@ -363,11 +376,17 @@ class Connect_Notion:
         # 2.Change Waitlist -> next
         # 3. Update count +1
         # If the exposure count reaches 7, move to conscious DB
-        for i in range(len(new_selection_vocab)):
-            print("Updating...\n")
-            print("Vocab: [", next_vocabs[i], "]\n")
-            print("Source: [", next_source[i], "]\n\n")
-
+        
+        print(next_pageId)
+        for i in range(len(next_index)):
+            try:
+                nv = next_vocabs[i]
+                print("Updating...\n")
+                print("Vocab: [", next_vocabs[i], "]\n")
+                print("Source: [", next_source[i], "]\n\n")
+            except:
+                pass
+            
             # Send the learned vocabs back to waitlist
             try:
                 Connect_Notion.updateData_to_waitlist(next_pageId[i], headers)
@@ -383,12 +402,14 @@ class Connect_Notion:
 
             # If the vocab count reaches assigned total_exposure, send it to a separate DB
             try:
-                if next_count[i] >= total_exposures:
+                if next_count[i] >= self.total_exposures:
                     Connect_Notion.move_to_conscious(next_pageId[i], headers)
                 Connect_Notion.updateData_count(
                     next_count[i], next_pageId[i], headers)
             except:
                 pass
+        
+            
 
         return next_vocabs, next_source, next_count, next_context
 
@@ -500,16 +521,8 @@ class Connect_Notion:
             'text': message
         }
 
-        requests.post(url='https://slack.com/api/chat.postMessage',
-                      data=data)
-
-    def is_time_between(begin_time, end_time, check_time=None):
-        # If check time is not given, default to current UTC time
-        check_time = check_time or datetime.now().time()
-        if begin_time < end_time:
-            return check_time >= begin_time and check_time <= end_time
-        else:  # crosses midnight
-            return check_time >= begin_time or check_time <= end_time
+        #requests.post(url='https://slack.com/api/chat.postMessage',
+        #              data=data)
 
 
 print("Retrieving Data...")
@@ -523,8 +536,8 @@ data = Cnotion.next_page(data)
 
 projects = Cnotion.get_projects_titles(data)
 projects_data = Cnotion.get_projects_data(data, projects)
-total_vocab_sug = Cnotion.adjust_suggestionRate(projects_data, total_vocab_sug)
-
+total_vocab_sug = Cnotion.adjust_suggestionRate(projects_data)
+#%%
 new_vocab, source, count, context = Cnotion.execute_update(
     projects_data, headers)
 vocab_dic = Cnotion.connect_LinguaAPI(new_vocab, secret.lingua_API('API Key'))
