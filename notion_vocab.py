@@ -521,8 +521,8 @@ class Connect_Notion:
             'text': message
         }
 
-        #requests.post(url='https://slack.com/api/chat.postMessage',
-        #              data=data)
+        requests.post(url='https://slack.com/api/chat.postMessage',
+                      data=data)
 
 
 print("Retrieving Data...")
