@@ -36,7 +36,7 @@ class Connect_Notion:
         self.vocab_data = vocab_data
         
         # slack access bot token
-        self.slack_token = secret.slack_token("slack_token")        
+        self.slack_token = secret.connect_slack("slack_token")        
 
         # linguistic API access Key
         self.linguistic_ApiKey = secret.lingua_API('API Key')
@@ -128,6 +128,8 @@ class Connect_Notion:
         # If the waitlist is over 100, adjust the suggestion rate
         if tot_vocab_watiList > 100:
             self.total_vocab_sug = round(tot_vocab_watiList / adj_suggest_rate)
+        if self.total_vocab_sug < 5:
+            self.total_vocab_sug = 5
         else:
             pass
 
@@ -430,7 +432,7 @@ class Connect_Notion:
 
         data = {
             'token': self.slack_token,
-            'channel': secret.slack_token("user_id"),    # User ID.
+            'channel': secret.connect_slack("user_id"),    # User ID.
             'as_user': True,
             'text': message
         }
