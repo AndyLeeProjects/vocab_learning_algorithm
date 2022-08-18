@@ -110,6 +110,32 @@ class Connect_Notion:
 
         response = requests.request("PATCH", updateUrl_to_waitlist,
                                     headers=self.headers, data=json.dumps(updateData_count))
+
+    
+    def move_to_MySQL(self):
+        """Find the Vocabularies that have the following attributes:
+            - Conscious Checked: Indicates that the vocab has been memorized
+            - Confidence Level == 5: Indicates that I feel confident about the vocab and
+             is read to be transffered into MySQL database
+        """
+        today_date = datetime.today().strftime('%Y-%m-%d')
+        today_date = datetime.strptime(today_date, '%Y-%m-%d')
+        
+        mastered_vocabs = []
+        for i, v in enumerate(self.vocab_data['Vocab']):
+
+            # Correct the date format
+            last_edited = datetime.fromisoformat(self.vocab_data['Last_Edited'][i][:-1] + '+00:00').astimezone(timezone.utc).strftime('%Y-%m-%d')
+            last_edited = datetime.strptime(last_edited, '%Y-%m-%d')
+
+            # Calculate the difference (today - last edited) in days
+            delta = today_date - last_edited
+            delta = delta.days
+
+            if self.vocab_data['Conscious'][i] == True and self.vocab_data['Confidence Level'][i] == 5 and \
+            delta > 13:
+                mastered_vocabs.append(v)
+
         
 
     def adjust_suggestionRate(self):
