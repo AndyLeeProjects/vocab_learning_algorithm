@@ -15,14 +15,11 @@ from datetime import timezone
 import numpy as np
 import sys
 import os
-if os.name == 'posix':
-    sys.path.append('/Users/andylee/Desktop/git_prepFile')
-else:
-    sys.path.append('C:\\NotionUpdate\\progress')
-
+sys.path.append('C:\\NotionUpdate\\progress')
 from secret import secret
 import pandas as pd
-from Connect_NotionAPI import Notion_API as NAPI
+sys.path.append('C:\\NotionUpdate\\progress\\vocab_learning_algorithm')
+from Notion_API import ConnectNotionDB as CN
 
 
 
@@ -39,7 +36,7 @@ class LearnVocab:
     def __init__(self, database_id, token_key):
         
         # Get data from Notion_API.py
-        Notion = NAPI.ConnectNotionDB(database_id, token_key)
+        Notion = CN(database_id, token_key)
         vocab_data = Notion.retrieve_data()
         self.vocab_data = vocab_data
         
@@ -162,8 +159,9 @@ class LearnVocab:
         # If the waitlist is over 100, adjust the suggestion rate
         if tot_vocab_watiList > 100:
             self.total_vocab_sug = round(tot_vocab_watiList / adj_suggest_rate)
-        if self.total_vocab_sug < 5:
-            self.total_vocab_sug = 5
+
+        if self.total_vocab_sug < 6:
+            self.total_vocab_sug = 6
         else:
             pass
 
@@ -287,7 +285,7 @@ class LearnVocab:
             while True:
                 # outputs random value in new_selection_index
                 ind = random.choices(new_selection_index)[0]
-                if len(random_vocabs) >= self.total_vocab_sug:
+                if len(random_vocabs) > self.total_vocab_sug:
                     break
                 if ind not in random_vocabs:
                     random_vocabs.append(ind)
@@ -471,8 +469,8 @@ class LearnVocab:
             'text': message
         }
 
-        requests.post(url='https://slack.com/api/chat.postMessage',
-                      data=data)
+        #requests.post(url='https://slack.com/api/chat.postMessage',
+        #              data=data)
         
     def run_All(self):
         print("Retrieving Data...")
