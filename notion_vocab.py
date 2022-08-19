@@ -26,12 +26,20 @@ from Connect_NotionAPI import Notion_API as NAPI
 
 
 
-class Connect_Notion:
+"""LearnVocab
+
+__init__ = Sets up necessary variables for the initiation such as db_id,
+            token key, data to be used, and etc.
+
+
+"""
+
+class LearnVocab:
     
     def __init__(self, database_id, token_key):
         
         # Get data from Notion_API.py
-        Notion = NAPI.connect_NotionDB(database_id, token_key)
+        Notion = NAPI.ConnectNotionDB(database_id, token_key)
         vocab_data = Notion.retrieve_data()
         self.vocab_data = vocab_data
         
@@ -469,10 +477,10 @@ class Connect_Notion:
     def run_All(self):
         print("Retrieving Data...")
         print()
-        Cnotion.adjust_suggestionRate()
-        Cnotion.execute_update()
-        Cnotion.connect_LinguaAPI()
-        Cnotion.send_vocab()
+        self.adjust_suggestionRate()
+        self.execute_update()
+        self.connect_LinguaAPI()
+        self.send_vocab()
 
 
 
@@ -481,6 +489,6 @@ class Connect_Notion:
 # Suggest Vocabs 
 database_id = secret.vocab('databaseId')
 token_key = secret.notion_API("token")
-Cnotion = Connect_Notion(database_id, token_key)
+Cnotion = LearnVocab(database_id, token_key)
 Cnotion.run_All()
 

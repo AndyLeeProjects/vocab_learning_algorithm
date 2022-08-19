@@ -1,23 +1,61 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Aug 16 13:38:15 2022
+Created on Wed Aug 10 14:02:35 2022
 
-@author: anddy
+@author: Andy
 """
 
 import requests
-import sys
 import numpy as np
-sys.path.append('C:\\NotionUpdate\progress')
-from secret import secret
+from datetime import datetime
 import pandas as pd
 import json
 
 
+""" ConnectNotionDB 
+
+__init__: 
+            Basic setup using database_id & token_key
 
 
-class connect_NotionDB:
+query_database: 
+            Sends request to Notion database using the provided information
+                - The retrieved data is in JSON format, which will need cleaning
+
+
+get_all_pages: 
+            Notion has a retrieval limit of 100 elements for each request. 
+            Thus, this method reads values from all pages.
+
+
+get_projects_titles: 
+            Collects title names of the given database.
+
+
+clean_data & extract_nested_elements: 
+            Organizes JSON data into a cleaner dictionary. 
+            However, each varialbe has varying number of nested objects. 
+            In other words, we need different line of code to access different types of elements.
+            So extract_nested_elements function generates different codes to help complete the 
+            cleaning process. 
+
+
+retrieve_data:
+            Runs all methods in the script in order and returns a clean dataframe. 
+
+
+"""
+
+
+
+class ConnectNotionDB:
     def __init__(self, database_id, token_key):
+        """Initial Setup
+
+        Args:
+            database_id (str): database id can be found in the database url
+            token_key (str): toekn key can be found in Notion page (Under Inspect).
+        """
         self.database_id = database_id
         self.token_key = token_key
         self.headers = headers = {
@@ -29,6 +67,14 @@ class connect_NotionDB:
 
 
     def query_databases(self):
+        """Requests Notion for an access to the designated database.
+
+        Raises:
+            ValueError: ValueError raised with incorrect input.
+
+        Returns:
+            JSON data 
+        """
         database_url = 'https://api.notion.com/v1/databases/' + self.database_id + "/query"
         response = requests.post(database_url, headers=self.headers)
         if response.status_code != 200:
@@ -36,8 +82,16 @@ class connect_NotionDB:
         else:
             self.json = response.json()
         return self.json
+
+
             
     def get_all_pages(self):
+        """Scrolls through all pages in the database.
+            - Only applies when there are more than 100 elements in the database.
+
+        Returns:
+            _type_: _description_
+        """
         readUrl = f"https://api.notion.com/v1/databases/{self.database_id}/query"
         next_cur = self.json['next_cursor']
         try:
@@ -50,6 +104,7 @@ class connect_NotionDB:
                 self.json['start_cursor'] = next_cur
                 self.json['next_cursor'] = None
                 data_hidden = json.dumps(self.json)
+
                 # Gets the next 100 results
                 data_hidden = requests.post(
                     readUrl, headers=self.headers, data=data_hidden).json()
@@ -65,6 +120,17 @@ class connect_NotionDB:
     
     
     def get_projects_titles(self):
+        """Collects the titles from the row with maximum number of title names
+            - when there is empty input(s) in Notion DB, the title name does not appear 
+            in the retrieved JSON data. Therefore, by finding the maximum number of 
+            "non-empty" row provides the maximum number of titles names. 
+
+            - page_id tag is also added, which will allow users to modify their Notion
+            page using code.
+
+        Returns:
+            list: title or column names of the database
+        """
         most_properties = [len(self.json['results'][i]['properties'])
                                 for i in range(len(self.json["results"]))]
         
@@ -75,13 +141,18 @@ class connect_NotionDB:
         
         
     def clean_data(self):
-        
-        data = {}
+        """Cleans JSON data using title_type
+            - Types include created_time, number, checkbox, last_edited_time, multi_select
+            select, rich_text, select, title, etc.
+
+        Returns:
+            dictionary: organized data
+        """
+        self.data = {}
         for title in self.titles:
             
-            # Get type of the variable and use it as a filtering tool
+            # Get the type of the variable and use it as a filtering tool
             title_type = self.json['results'][self.max_ind]['properties'][title]['type']
-            
             temp = []
             page_id = []
             for i in range(len(self.json['results'])):
@@ -92,22 +163,31 @@ class connect_NotionDB:
                     page_id.append(self.json['results'][i]['id'])
                 except:
                     temp.append(np.nan)
-            data[title] = temp
-            data['pageId'] = page_id
+            self.data[title] = temp
+            self.data['pageId'] = page_id
         
         
         
-        for key in data.keys():
-            row_num = len(data[key])
+        for key in self.data.keys():
+            row_num = len(self.data[key])
             
-            data[key] = [connect_NotionDB.extract_nested_elements(data, key, ind) 
+            self.data[key] = [ConnectNotionDB.extract_nested_elements(self.data, key, ind) 
                          for ind in range(row_num)]
             
-            
-        self.data = data
-        return data
+        return self.data
 
-    def extract_nested_elements(data,key, ind):
+    def extract_nested_elements(data, key, ind):
+        """Even after cleaning the data, JSON type elements will still exist. 
+           Thus, this function provides nested_type, which will allow complete access to all elements.
+
+        Args:
+            data (dictionary): cleaned data
+            key (str): title name
+            ind (int): index of the passed element
+
+        Returns:
+            nested_type: provides the nested_type
+        """
         try:
             nested_type = data[key][ind][0]['text']['content']
             return nested_type
@@ -147,11 +227,14 @@ class connect_NotionDB:
 
     
     def retrieve_data(self):
-        Notion = connect_NotionDB(self.database_id, self.token_key)
-        jsn = Notion.query_databases()
-        jsn_all = Notion.get_all_pages()
-        titles = Notion.get_projects_titles()
-        data = pd.DataFrame(Notion.clean_data())
+        """Retrieves data from the designated database in Notion by running all methods above.
+
+        Returns:
+            pandas dataframe: Default return option
+        """
+        jsn = self.query_databases()
+        jsn_all = self.get_all_pages()
+        titles = self.get_projects_titles()
+        return  pd.DataFrame(self.clean_data())
         
-        return data
-    
+
