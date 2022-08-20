@@ -5,21 +5,18 @@ Created on Tue Jan 18 06:42:07 2022
 @author: anddy
 """
 
-import requests
-import json
+import requests, json
 import numpy as np
+import pandas as pd
 import random as random
-from datetime import date
-from datetime import datetime
-from datetime import timezone
+from datetime import date, datetime, timezone
 import numpy as np
-import sys
-import os
+import sys, os
+from Notion_API import ConnectNotionDB as CN
 sys.path.append('C:\\NotionUpdate\\progress')
 from secret import secret
-import pandas as pd
-sys.path.append('C:\\NotionUpdate\\progress\\vocab_learning_algorithm')
-from Notion_API import ConnectNotionDB as CN
+
+
 
 
 
