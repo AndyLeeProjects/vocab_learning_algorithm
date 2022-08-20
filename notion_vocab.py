@@ -25,8 +25,13 @@ from Notion_API import ConnectNotionDB as CN
 
 """LearnVocab
 
-__init__ = Sets up necessary variables for the initiation such as db_id,
-            token key, data to be used, and etc.
+__init__
+    - Basic Setup:
+        1. Retrieves vocabulary data using Notion_API (takes in database_id & token_key)
+        2. Defines Slack token and Linguistic API key for later use.
+        3. Choose minimum number of total vocab suggestions.
+        4. Set up total exposures
+    
 
 
 """
@@ -47,7 +52,7 @@ class LearnVocab:
         self.linguistic_ApiKey = secret.lingua_API('API Key')
         
         self.total_vocab_sug = 5
-        self.total_exposures = 6
+        self.total_exposures = 7
         
         # Set Headers for Notion API
         self.headers = {
