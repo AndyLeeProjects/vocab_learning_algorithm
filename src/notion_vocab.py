@@ -123,7 +123,7 @@ class LearnVocab:
     def move_to_MySQL(self):
         """Find the Vocabularies that have the following attributes:
             - Conscious Checked: Indicates that the vocab has been memorized
-            - Confidence Level == 5: Indicates that I feel confident about the vocab and
+            - Confidence Level == 5 (5/5 -> completely memorized): Indicates that I feel confident about the vocab and
              is read to be transffered into MySQL database
         """
         today_date = datetime.today().strftime('%Y-%m-%d')
