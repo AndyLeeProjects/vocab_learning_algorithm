@@ -12,6 +12,7 @@ import random as random
 from datetime import date, datetime, timezone
 import numpy as np
 import sys, os
+sys.path.append('C:\\NotionUpdate\\progress\\vocab_learning_algorithm\\src')
 from Notion_API import ConnectNotionDB as CN
 sys.path.append('C:\\NotionUpdate\\progress')
 from secret import secret
@@ -162,8 +163,8 @@ class LearnVocab:
         if tot_vocab_watiList > 100:
             self.total_vocab_sug = round(tot_vocab_watiList / adj_suggest_rate)
 
-        if self.total_vocab_sug < 6:
-            self.total_vocab_sug = 6
+        if self.total_vocab_sug < 5:
+            self.total_vocab_sug = 5
         else:
             pass
 
@@ -283,12 +284,12 @@ class LearnVocab:
             else:
                 random_vocabs = priority_vocabs[:round(self.total_vocab_sug/2)]
 
-            # Run as many times to satisfy n(total_vocab_sug) random words from the new_selection pool
-            while True:
+            # Run as many times to satisfy n(total_vocab_sug number of random words from the new_selection pool
+            while len(random_vocabs) < self.total_vocab_sug:
+                
                 # outputs random value in new_selection_index
                 ind = random.choices(new_selection_index)[0]
-                if len(random_vocabs) > self.total_vocab_sug:
-                    break
+
                 if ind not in random_vocabs:
                     random_vocabs.append(ind)
             new_selection_index = random_vocabs
@@ -330,7 +331,14 @@ class LearnVocab:
         # 3. Update count +1
         # If the exposure count reaches 7, move to conscious DB
         
-        for i in range(len(next_index)):
+        
+        # Find the maximum number between new_selection_vcab & next_vocabs
+        ## Purpose: since the number of suggestions vary depending on the total
+        ## vocabs in the database, the maximum length is found to make sure
+        ## all records get updated
+        max_iteration = np.max([len(next_index), len(new_selection_index)])
+        
+        for i in range(max_iteration):
             try:
                 nv = next_vocabs[i]
                 print("Updating...\n")
