@@ -28,7 +28,7 @@ __init__
         1. Retrieves vocabulary data using Notion_API (takes in database_id & token_key)
         2. Defines Slack token and Linguistic API key for later use.
         3. Choose minimum number of total vocab suggestions.
-        4. Set up total exposures
+        4. Set up total exposures & total number of suggestions
     
 
 
@@ -36,20 +36,25 @@ __init__
 
 class LearnVocab:
     
-    def __init__(self, database_id, token_key):
-        
+    def __init__(self, database_id:str, token_key:str):
+        """
+        __init__: Initial setup
+
+        Args:
+            database_id (str): Notion database id 
+            token_key (str): Integration token key 
+        """
         # Get data from Notion_API.py
         Notion = CN(database_id, token_key)
         vocab_data = Notion.retrieve_data()
-        self.vocab_data = vocab_data
+        self.vocab_data = vocab_data        
         
-        # slack access bot token
-        self.slack_token = secret.connect_slack("slack_token")        
+        # Total number of vocabularies for each slack notification 
+        ## num_vocab_sug will change depending on the total number of vocabularies on the waitlist
+        ## to prevent cloggage. 
+        self.num_vocab_sug = 5
 
-        # linguistic API access Key
-        self.linguistic_ApiKey = secret.lingua_API('API Key')
-        
-        self.total_vocab_sug = 5
+        # When it reaches the total_exposures, move to "memorized" database for testing
         self.total_exposures = 7
         
         # Set Headers for Notion API
@@ -60,10 +65,18 @@ class LearnVocab:
         }
         
     
-    def updateData_to_next(self, pageId):
+    def update_fromWaitlist_toNext(self, pageId: str):
+        """
+        update_fromWaitlist_toNext: With the given pageId, which corresponds to a specific record (vocabulary),
+        below code will update its "select" status from 'Wait List' to 'Next.' 
+            - After selecting a new list of vocabularies, their status will be updated using this method. 
+
+        Args:
+            pageId (str): pageId of each record
+        """
         updateUrl_to_next = f"https://api.notion.com/v1/pages/{pageId}"
 
-        updateData_to_next = {
+        update_fromWaitlist_toNext = {
             "properties": {
                 "Next": {
                     "select":
@@ -75,12 +88,21 @@ class LearnVocab:
         }
 
         response = requests.request("PATCH", updateUrl_to_next,
-                                    headers=self.headers, data=json.dumps(updateData_to_next))
+                                    headers=self.headers, data=json.dumps(update_fromWaitlist_toNext))
 
-    def updateData_to_waitlist(self, pageId):
+    def update_fromNext_toWaitlist(self, pageId: str):
+        """
+        update_fromNext_toWaitlist: Similar to above method, below code will update its "select" status from 'Next' to 'Wait List.' 
+            - The update occurs after the vocabularies' slack exposures
+        
+
+        Args:
+            pageId (str): pageId of each record
+        """
+        
         updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
 
-        updateData_to_waitlist = {
+        update_fromNext_toWaitlist = {
             "properties": {
                 "Next": {
                     "select":
@@ -92,24 +114,38 @@ class LearnVocab:
         }
 
         response = requests.request("PATCH", updateUrl_to_waitlist,
-                                    headers=self.headers, data=json.dumps(updateData_to_waitlist))
+                                    headers=self.headers, data=json.dumps(update_fromNext_toWaitlist))
 
-    def updateData_count(self, count_min, pageId):
+    def update_count(self, cur_count: int, pageId: str):
+        """
+        update_count: For every vocab exposure, its count increments by 1
+
+        Args:
+            cur_count (int): current count for the vocab
+            pageId (str): pageId of each record
+        """
         updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
-        updateData_count = {
+        update_count = {
             "properties": {
                 "Count": {
-                    "number": count_min + 1
+                    "number": cur_count + 1
                 }
             }}
 
         response = requests.request("PATCH", updateUrl_to_waitlist,
-                                    headers=self.headers, data=json.dumps(updateData_count))
+                                    headers=self.headers, data=json.dumps(update_count))
 
-    def move_to_conscious(self, pageId):
+    def update_toConsciousness(self, pageId: str):
+        """
+        update_toConsciousness: When the exposure count reaches 7, transfer the record to "memorized" database 
+        in Notion(or MySQL).
+
+        Args:
+            pageId (str): pageId of each record
+        """
         # After reaching 7 exposures, the vocabulary will moved to other DB, called "conscious"
         updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
-        updateData_count = {
+        update_count = {
             "properties": {
                 "Conscious": {
                     "checkbox": True
@@ -117,7 +153,7 @@ class LearnVocab:
             }}
 
         response = requests.request("PATCH", updateUrl_to_waitlist,
-                                    headers=self.headers, data=json.dumps(updateData_count))
+                                    headers=self.headers, data=json.dumps(update_count))
 
     
     def move_to_MySQL(self):
@@ -161,10 +197,10 @@ class LearnVocab:
 
         # If the waitlist is over 100, adjust the suggestion rate
         if tot_vocab_watiList > 100:
-            self.total_vocab_sug = round(tot_vocab_watiList / adj_suggest_rate)
+            self.num_vocab_sug = round(tot_vocab_watiList / adj_suggest_rate)
 
-        if self.total_vocab_sug < 5:
-            self.total_vocab_sug = 5
+        if self.num_vocab_sug < 5:
+            self.num_vocab_sug = 5
         else:
             pass
 
@@ -273,19 +309,19 @@ class LearnVocab:
 
 
         # random number between 0 to total length of vocabularies with the minimum count
-        if len(new_selection_index) == self.total_vocab_sug:
+        if len(new_selection_index) == self.num_vocab_sug:
             pass
         else:
             random_vocabs = []
 
             # If priority_vocabs is not empty, add them first before adding other vocabularies
-            if len(priority_vocabs) <= round(self.total_vocab_sug/2):
+            if len(priority_vocabs) <= round(self.num_vocab_sug/2):
                 random_vocabs = priority_vocabs
             else:
-                random_vocabs = priority_vocabs[:round(self.total_vocab_sug/2)]
+                random_vocabs = priority_vocabs[:round(self.num_vocab_sug/2)]
 
-            # Run as many times to satisfy n(total_vocab_sug number of random words from the new_selection pool
-            while len(random_vocabs) < self.total_vocab_sug:
+            # Run as many times to satisfy n(num_vocab_sug number of random words from the new_selection pool
+            while len(random_vocabs) < self.num_vocab_sug:
                 
                 # outputs random value in new_selection_index
                 ind = random.choices(new_selection_index)[0]
@@ -349,21 +385,21 @@ class LearnVocab:
             
             # Send the learned vocabs back to waitlist
             try:
-                Cnotion.updateData_to_waitlist(next_pageId[i])
+                Cnotion.update_fromNext_toWaitlist(next_pageId[i])
             except:
                 pass
 
             # Update new selected vocabs
             try:
-                Cnotion.updateData_to_next(new_selection_pageId[i])
+                Cnotion.update_fromWaitlist_toNext(new_selection_pageId[i])
             except:
                 pass
 
             # If the vocab count reaches assigned total_exposure, send it to a separate DB
             try:
                 if next_count[i] >= self.total_exposures:
-                    Cnotion.move_to_conscious(next_pageId[i])
-                Cnotion.updateData_count(next_count[i], next_pageId[i])
+                    Cnotion.update_toConsciousness(next_pageId[i])
+                Cnotion.update_count(next_count[i], next_pageId[i])
             except:
                 pass
         
@@ -379,7 +415,7 @@ class LearnVocab:
             url = "https://lingua-robot.p.rapidapi.com/language/v1/entries/en/" + \
                 vocab.lower().strip(' ')
             headers = {
-                "X-RapidAPI-Key": self.linguistic_ApiKey,
+                "X-RapidAPI-Key": secret.lingua_API('API Key'),
                 "X-RapidAPI-Host": "lingua-robot.p.rapidapi.com"
             }
 
@@ -473,7 +509,7 @@ class LearnVocab:
         print(message)
 
         data = {
-            'token': self.slack_token,
+            'token': secret.connect_slack("slack_token"),
             'channel': secret.connect_slack("user_id"),    # User ID.
             'as_user': True,
             'text': message
