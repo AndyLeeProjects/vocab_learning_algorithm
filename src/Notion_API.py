@@ -10,6 +10,7 @@ import numpy as np
 from datetime import datetime
 import pandas as pd
 import json
+import time
 
 
 """ ConnectNotionDB 
@@ -58,7 +59,6 @@ class ConnectNotionDB:
         """
         self.database_id = database_id
         self.token_key = token_key
-
         self.headers = headers = {
             "Authorization": "Bearer " + self.token_key,
             "Content-Type": "application/json",
@@ -95,22 +95,22 @@ class ConnectNotionDB:
         """
         readUrl = f"https://api.notion.com/v1/databases/{self.database_id}/query"
         next_cur = self.json['next_cursor']
-        payload = {"page_size": 100}
-
+        
+        page_num = 1
         try:
-            page_num = 1
             while self.json['has_more']:
-                print(f"reading page number {page_num}...")
+                print(f"reading database page {page_num}...")
                 print()
                 
-                # Sets a new starting point 
-                payload['start_cursor'] = next_cur
+                # Sets a new starting point
+                self.json['start_cursor'] = next_cur
                 data_hidden = json.dumps(self.json)
 
                 # Gets the next 100 results
+                payload = {"page_size": 100}
                 data_hidden = requests.post(
-                    readUrl, json=payload, headers=self.headers, data=data_hidden).json()
-                
+                    readUrl, json = payload, headers=self.headers, data=data_hidden).json()
+
                 self.json["results"] += data_hidden["results"]
                 next_cur = data_hidden['next_cursor']
                 page_num += 1
@@ -190,6 +190,19 @@ class ConnectNotionDB:
         Returns:
             nested_type: provides the nested_type
         """
+        
+        # Multi-select
+        try:
+            if isinstance(data[key][ind], dict) == True:
+                nested_type = data[key][ind]['name']
+            elif len(data[key][ind]) != 1:
+                nested_type = [data[key][ind][i]['name'] for i in range(len(data[key][ind]))]
+            else:
+                nested_type = data[key][ind]['name']
+            return nested_type
+        except:
+            pass
+
         try:
             nested_type = data[key][ind][0]['text']['content']
             return nested_type
@@ -198,12 +211,6 @@ class ConnectNotionDB:
         
         try:
             nested_type = data[key][ind]['number']
-            return nested_type
-        except:
-            pass
-        
-        try: 
-            nested_type = data[key][ind]['name']
             return nested_type
         except:
             pass
@@ -238,4 +245,3 @@ class ConnectNotionDB:
         jsn_all = self.get_all_pages()
         titles = self.get_projects_titles()
         return  pd.DataFrame(self.clean_data())
-        
