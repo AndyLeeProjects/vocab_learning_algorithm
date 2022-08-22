@@ -58,6 +58,7 @@ class ConnectNotionDB:
         """
         self.database_id = database_id
         self.token_key = token_key
+
         self.headers = headers = {
             "Authorization": "Bearer " + self.token_key,
             "Content-Type": "application/json",
@@ -94,6 +95,8 @@ class ConnectNotionDB:
         """
         readUrl = f"https://api.notion.com/v1/databases/{self.database_id}/query"
         next_cur = self.json['next_cursor']
+        payload = {"page_size": 100}
+
         try:
             page_num = 1
             while self.json['has_more']:
@@ -101,13 +104,12 @@ class ConnectNotionDB:
                 print()
                 
                 # Sets a new starting point 
-                self.json['start_cursor'] = next_cur
-                self.json['next_cursor'] = None
+                payload['start_cursor'] = next_cur
                 data_hidden = json.dumps(self.json)
 
                 # Gets the next 100 results
                 data_hidden = requests.post(
-                    readUrl, headers=self.headers, data=data_hidden).json()
+                    readUrl, json=payload, headers=self.headers, data=data_hidden).json()
                 
                 self.json["results"] += data_hidden["results"]
                 next_cur = data_hidden['next_cursor']
@@ -237,4 +239,3 @@ class ConnectNotionDB:
         titles = self.get_projects_titles()
         return  pd.DataFrame(self.clean_data())
         
-

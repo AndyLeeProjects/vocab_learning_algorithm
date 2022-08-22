@@ -18,10 +18,7 @@ sys.path.append('C:\\NotionUpdate\\progress')
 from secret import secret
 
 
-
-
-
-"""LearnVocab
+"""LearnVocab()
 
 __init__
     - Basic Setup:
