@@ -12,10 +12,14 @@ import random as random
 from datetime import date, datetime, timezone
 import numpy as np
 import sys, os
+
+sys.path.append('C:\\NotionUpdate\\progress\\vocab_learning_algorithm')
+from secret import secret
+
 sys.path.append('C:\\NotionUpdate\\progress\\vocab_learning_algorithm\\src')
 from Notion_API import ConnectNotionDB as CN
-sys.path.append('C:\\NotionUpdate\\progress')
-from secret import secret
+
+
 
 
 """LearnVocab()
@@ -506,8 +510,8 @@ class LearnVocab:
         print(message)
 
         data = {
-            'token': secret.connect_slack("slack_token"),
-            'channel': secret.connect_slack("user_id"),    # User ID.
+            'token': secret.connect_slack(key = 'slack_token'),
+            'channel': secret.connect_slack("user_id_vocab"),    # User ID.
             'as_user': True,
             'text': message
         }
