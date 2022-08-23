@@ -35,7 +35,7 @@ get_projects_titles:
 
 clean_data & extract_nested_elements: 
             Organizes JSON data into a cleaner dictionary. 
-            However, each varialbe has varying number of nested objects. 
+            However, each variable has varying number of nested objects. 
             In other words, we need different line of code to access different types of elements.
             So extract_nested_elements function generates different codes to help complete the 
             cleaning process. 
@@ -55,7 +55,7 @@ class ConnectNotionDB:
 
         Args:
             database_id (str): database id can be found in the database url
-            token_key (str): toekn key can be found in Notion page (Under Inspect).
+            token_key (str): token key can be found in Notion page (Under Inspect).
         """
         self.database_id = database_id
         self.token_key = token_key

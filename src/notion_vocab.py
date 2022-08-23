@@ -2,7 +2,7 @@
 """
 Created on Tue Jan 18 06:42:07 2022
 
-@author: anddy
+@author: Andy
 """
 
 import requests, json
@@ -12,14 +12,11 @@ import random as random
 from datetime import date, datetime, timezone
 import numpy as np
 import sys, os
-
-sys.path.append('C:\\NotionUpdate\\progress\\vocab_learning_algorithm')
-from secret import secret
-
 sys.path.append('C:\\NotionUpdate\\progress\\vocab_learning_algorithm\\src')
 from Notion_API import ConnectNotionDB as CN
-
-
+sys.path.append('C:\\NotionUpdate\\progress')
+from secret import secret
+from pathlib import Path
 
 
 """LearnVocab()
@@ -161,7 +158,7 @@ class LearnVocab:
         """Find the Vocabularies that have the following attributes:
             - Conscious Checked: Indicates that the vocab has been memorized
             - Confidence Level == 5 (5/5 -> completely memorized): Indicates that I feel confident about the vocab and
-             is read to be transffered into MySQL database
+             is read to be transferred into MySQL database
         """
         today_date = datetime.today().strftime('%Y-%m-%d')
         today_date = datetime.strptime(today_date, '%Y-%m-%d')
@@ -184,36 +181,46 @@ class LearnVocab:
         
 
     def adjust_suggestionRate(self):
-
-        adj_suggest_rate = 18
-
-        # The purpose for this function is to find an appropriate rate for daily suggestions.
-        # This is to prevent congestion caused by too many vocabs on the waitlist compared to
-        # the vocabs being suggested.
+        """
+        The purpose for this function is to find an appropriate rate for daily suggestions.
+        This is to prevent congestion caused by too many vocabs on the waitlist and having
+        slow outflow of vocabularies. 
+        """
+        
+        # Set up a rate in which is divided by the total vocabularies on the waitlist
+        ## Formula: num of suggestions = num of vocabs on Waitlist / adj_suggest_rate
+        ## -> Thus, the lower the rate is, the more vocab suggestions there will be.
+        ### Also, this number was derived considering that there are usually 85 ~ 150 vocabs,
+        ### which will output 5 ~ 10 vocabs depending on the vocabs in the Waitlist.
+        adj_suggest_rate = 14
 
         vocab_df = pd.DataFrame(self.vocab_data)
 
         # Get total number of vocabs waiting to be suggested
-        tot_vocab_watiList = len(vocab_df[vocab_df['Conscious'] == False])
+        tot_vocab_waitList = len(vocab_df[vocab_df['Conscious'] == False])
 
         # If the waitlist is over 100, adjust the suggestion rate
-        if tot_vocab_watiList > 100:
-            self.num_vocab_sug = round(tot_vocab_watiList / adj_suggest_rate)
+        if tot_vocab_waitList > 100:
+            self.num_vocab_sug = round(tot_vocab_waitList / adj_suggest_rate)
 
+        # If the total number of vocabulary suggestion is less than 5, set it to 5. 
         if self.num_vocab_sug < 5:
             self.num_vocab_sug = 5
+        elif self.num_vocab_sug > 10:
+            self.num_vocab_sug = 10
         else:
             pass
 
     def find_prioritySource(self):
         """
-        There are vocabularies that need to be memorized urgently.
-        For those sources, I have marked their sources with Asterisk sign 
-        at the end of the sourc name. (ex. "Data Science*", "Job Search*")
+        There are vocabularies that need to be memorized more urgently. (job-related or school-related)
+        For such categories, I have marked their sources with Asterisk sign 
+        at the end of the source name. (ex. "Data Science*", "Job Search*")
 
         These prioritized sources will be used in select_vocabSuggestions
         where it will fill vocabs with these sources first. 
         """
+
         source = pd.DataFrame(self.vocab_data['Source'], columns=["Source"])
         source = source.drop_duplicates()
 
@@ -226,17 +233,23 @@ class LearnVocab:
 
     def select_vocabSuggestions(self, count_min, next_index):
         """
-        This function is the algorithm that smartly selects vocabulary suggestions.
-        The following are some of the conditions.
-            - include at maximum 3 vocabs with the lowest count (using count_min)
-                -> This is to relearn newly introduced vocabs ASAP
+        select_vocabSuggestions: This method selects vocabulary for suggestions considering
+        the following conditions.
+            - include maximum of 3 vocabs with the lowest count (using count_min)
+                -> This is to relearn newly introduced vocabs within 24 hours (recommended study method)
             - suggest vocabs with prioritized sources (priority_unique)
             - Unmemorized vocab (using Conscious == False)
             - suggest completely different words than the previous suggestions
             - suggest unique words (No redundancy within a suggestion)
 
+        Args:
+            count_min (int): the smallest count value in the vocab dataset
+            next_index (list): the index of the vocabularies 
+
+        Returns:
+            new_selection_index: _description_
+            priority_vocabs: 
         """
-        
         # Get high priority vocabularies
         Cnotion.find_prioritySource()
         
@@ -249,7 +262,10 @@ class LearnVocab:
         ind = 0
         vocab_count = count_min
         while True:
-            if len(self.vocab_data['Vocab']) < ind + 1 and vocab_count == np.max(self.vocab_data['Count']):
+            # Break when ind exceeds the total number of vocabularies AND when vocab_count(exposures) exceeds the 
+            # maximum number of exposures among the vocabularies in the WaitList
+            if len(self.vocab_data['Vocab']) < ind + 1 and \
+                vocab_count == np.max(self.vocab_data['Count']):
                 break
 
             # Sometimes there DNE where all of these conditions are met
@@ -259,7 +275,9 @@ class LearnVocab:
                 if ':' in self.vocab_data['Source'][ind]:
                     source_name = self.vocab_data['Source'][ind].split(':')[0]
                 
-                # 1st Condition (Strong: Most prioritized)
+                # Condition 1: HIGH Priority
+                ## Stores vocabularies in a separate variable: priority_vocabs
+                ### - 
                 if self.vocab_data['Count'][ind] == vocab_count and \
                    self.vocab_data['Conscious'][ind] == False and \
                    date.today().strftime('%Y-%m-%d') != self.vocab_data['Last_Edited'][ind] and \
@@ -267,14 +285,14 @@ class LearnVocab:
 
                     priority_vocabs.append(ind)
 
-                # 2nd Condition (Medium)
+                # Condition 2: Medium Priority
                 elif self.vocab_data['Count'][ind] == vocab_count and \
                     self.vocab_data['Conscious'][ind] == False and \
                         date.today().strftime('%Y-%m-%d') != self.vocab_data['Last_Edited'][ind]:
 
                     new_selection_index.append(ind)
 
-                # 3rd Condition (Weak)
+                # Condition 3: Low Priority
                 elif self.vocab_data['Count'][ind] == vocab_count and \
                         self.vocab_data['Conscious'][ind] == False and \
                         ind not in new_selection_index and \
@@ -369,7 +387,7 @@ class LearnVocab:
         # If the exposure count reaches 7, move to conscious DB
         
         
-        # Find the maximum number between new_selection_vcab & next_vocabs
+        # Find the maximum number between new_selection_vocab & next_vocabs
         ## Purpose: since the number of suggestions vary depending on the total
         ## vocabs in the database, the maximum length is found to make sure
         ## all records get updated
@@ -424,7 +442,7 @@ class LearnVocab:
             data = json.loads(response.text)
 
             # DEFINE vocab_info
-            # try: Some vocabuarlies do not have definitions (ex: fugazi)
+            # try: Some vocabularies do not have definitions (ex: fugazi)
             try:
                 vocab_dat = data['entries'][0]['lexemes']
             except IndexError:
@@ -510,8 +528,8 @@ class LearnVocab:
         print(message)
 
         data = {
-            'token': secret.connect_slack(key = 'slack_token'),
-            'channel': secret.connect_slack("user_id_vocab"),    # User ID.
+            'token': secret.connect_slack("slack_token"),
+            'channel': secret.connect_slack("user_id"),    # User ID.
             'as_user': True,
             'text': message
         }
@@ -535,5 +553,6 @@ class LearnVocab:
 database_id = secret.vocab('databaseId')
 token_key = secret.notion_API("token")
 Cnotion = LearnVocab(database_id, token_key)
-Cnotion.run_All()
+
+#Cnotion.run_All()
 
