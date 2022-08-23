@@ -580,7 +580,7 @@ class LearnVocab:
 
         data = {
             'token': secret.connect_slack("slack_token"),
-            'channel': secret.connect_slack("user_id"),    # User ID.
+            'channel': secret.connect_slack("user_id_vocab"),    # User ID.
             'as_user': True,
             'text': message
         }
