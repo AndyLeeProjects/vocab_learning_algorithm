@@ -17,20 +17,67 @@ sys.stderr = io.TextIOWrapper(sys.stderr.detach(), encoding = 'utf-8')
 
 sys.path.append('C:\\NotionUpdate\\progress\\vocab_learning_algorithm\\src')
 from Notion_API import ConnectNotionDB as CN
+from update_notion import UpdateNotion
 sys.path.append('C:\\NotionUpdate\\progress\\vocab_learning_algorithm')
 from secret import secret
 
 
 """LearnVocab()
 
-__init__
-    - Basic Setup:
-        1. Retrieves vocabulary data using Notion_API (takes in database_id & token_key)
+__init__:
+    Basic Setup:
+        1. Retrieves vocabulary data using Notion_API (takes in database_id & token_key).
         2. Defines Slack token and Linguistic API key for later use.
-        3. Choose minimum number of total vocab suggestions.
-        4. Set up total exposures & total number of suggestions
-    
+        3. Choose a minimum number of total vocab suggestions.
+        4. Set up total exposures & a total number of suggestions.
 
+
+update_MySQL():
+    Finds the Vocabularies that have the following attributes and moves them into MySQL database:
+        - Conscious Checked: Indicates that the vocab has been memorized
+        - Confidence Level == 5 (5/5 -> completely memorized): Indicates that I feel confident about the vocab and
+            is read to be transferred into MySQL database
+        
+
+adjust_suggestionRate():
+    As the vocabularies in the waitlist increase & decrease in size, this method controls the 
+        a number of vocabulary inflow & outflow to prevent congestions. 
+
+
+find_prioritySource():
+    Learning some vocabulary are urgent than others. Specified by the users, the vocabularies have an asterisk 
+    sign for the 'more important' categories (ex: Job*, Data Science*, Biology*, etc.), and this method differentiates 
+    the vocabularies that belong to such categories. 
+
+
+select_vocabSuggestions(): 
+    - 4 levels of Priority: High, High-Medium (New), Medium, and Low
+        -> With each priority level, different conditions are applied and separately stored
+    - This method selects vocabularies for slack notification considering the following conditions.
+        1. include a maximum of 3 vocabs with the lowest count (using count_min)
+            -> This is to relearn newly introduced vocabs within 24 hours (recommended study method)
+        2. suggest vocabs with prioritized sources (priority_unique)
+        3. Unmemorized vocab (using Conscious == False)
+        4. suggest completely different words than the previous suggestions
+        5. suggest unique words (No redundancy within a suggestion)
+
+vocab_suggestionRatio():
+    As vocabularies are stored into different priority levels, unique ratios are each applied to corresponding groups. 
+        - These ratios will be used to pick a specific number of vocabularies from each group.
+
+
+execute_update():
+    With the consideration of different priority groups and the priority ratios, a new selection of vocabularies is
+    generated. Then by importing & utilizing the update_notion module, the database is updated accordingly.
+
+
+connect_LinguaAPI():
+    Retrieves vocabulary definition, sentence examples, synonyms, and contexts.
+
+
+send_vocab():
+    Using the information retrieved from LinguaAPI, a string format message is generated. Then 
+    using the Slack API, the message is sent at scheduled times.
 
 """
 
@@ -64,99 +111,9 @@ class LearnVocab:
             "Notion-Version": "2021-05-13"
         }
         
-    
-    def update_fromWaitlist_toNext(self, pageId: str):
-        """
-        update_fromWaitlist_toNext: With the given pageId, which corresponds to a specific record (vocabulary),
-        below code will update its "select" status from 'Wait List' to 'Next.' 
-            - After selecting a new list of vocabularies, their status will be updated using this method. 
-
-        Args:
-            pageId (str): pageId of each record
-        """
-        updateUrl_to_next = f"https://api.notion.com/v1/pages/{pageId}"
-
-        update_fromWaitlist_toNext = {
-            "properties": {
-                "Next": {
-                    "select":
-                        {
-                            "name": "Next"
-                        }
-                }
-            }
-        }
-
-        response = requests.request("PATCH", updateUrl_to_next,
-                                    headers=self.headers, data=json.dumps(update_fromWaitlist_toNext))
-
-    def update_fromNext_toWaitlist(self, pageId: str):
-        """
-        update_fromNext_toWaitlist: Similar to above method, below code will update its "select" status from 'Next' to 'Wait List.' 
-            - The update occurs after the vocabularies' slack exposures
-        
-
-        Args:
-            pageId (str): pageId of each record
-        """
-        
-        updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
-
-        update_fromNext_toWaitlist = {
-            "properties": {
-                "Next": {
-                    "select":
-                        {
-                            "name": "Wait List"
-                        }
-                }
-            }
-        }
-
-        response = requests.request("PATCH", updateUrl_to_waitlist,
-                                    headers=self.headers, data=json.dumps(update_fromNext_toWaitlist))
-
-    def update_count(self, cur_count: int, pageId: str):
-        """
-        update_count: For every vocab exposure, its count increments by 1
-
-        Args:
-            cur_count (int): current count for the vocab
-            pageId (str): pageId of each record
-        """
-        updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
-        update_count = {
-            "properties": {
-                "Count": {
-                    "number": cur_count + 1
-                }
-            }}
-
-        response = requests.request("PATCH", updateUrl_to_waitlist,
-                                    headers=self.headers, data=json.dumps(update_count))
-
-    def update_toConsciousness(self, pageId: str):
-        """
-        update_toConsciousness: When the exposure count reaches 7, transfer the record to "memorized" database 
-        in Notion(or MySQL).
-
-        Args:
-            pageId (str): pageId of each record
-        """
-        # After reaching 7 exposures, the vocabulary will moved to other DB, called "conscious"
-        updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
-        update_count = {
-            "properties": {
-                "Conscious": {
-                    "checkbox": True
-                }
-            }}
-
-        response = requests.request("PATCH", updateUrl_to_waitlist,
-                                    headers=self.headers, data=json.dumps(update_count))
 
     
-    def move_to_MySQL(self):
+    def update_MySQL(self):
         """Find the Vocabularies that have the following attributes:
             - Conscious Checked: Indicates that the vocab has been memorized
             - Confidence Level == 5 (5/5 -> completely memorized): Indicates that I feel confident about the vocab and
@@ -355,6 +312,15 @@ class LearnVocab:
 
 
     def execute_update(self):
+        """
+        execute_update():
+            With the different priority groups & ratios, new selection of vocabularies are generated. 
+            The following are the basic steps the Notion Update process:
+                1. Exposed vocabularies gets moved back to the 'WaitList' and their counts (exposures) are
+                    incremented by one.
+                2. Newly selected vocabularies are moved from 'WaitList' to 'Next' status.
+                3. If any of the vocabs' total exposure is greater than equal to 7, move them to a consciousness database.
+        """
         # indexes for 'next' vocabs or 'to be suggested' vocab
         next_index = [i for i in range(len(self.vocab_data['Vocab']))
                       if self.vocab_data["Next"][i] == "Next"]
@@ -458,21 +424,21 @@ class LearnVocab:
             
             # Send the learned vocabs back to waitlist
             try:
-                Cnotion.update_fromNext_toWaitlist(next_pageId[i])
+                UpdateNotion.update_fromNext_toWaitlist(next_pageId[i])
             except:
                 pass
 
             # Update new selected vocabs
             try:
-                Cnotion.update_fromWaitlist_toNext(new_selection_pageId[i])
+                UpdateNotion.update_fromWaitlist_toNext(new_selection_pageId[i])
             except:
                 pass
 
             # If the vocab count reaches assigned total_exposure, send it to a separate DB
             try:
                 if next_count[i] >= self.total_exposures:
-                    Cnotion.update_toConsciousness(next_pageId[i])
-                Cnotion.update_count(next_count[i], next_pageId[i])
+                    UpdateNotion.update_toConsciousness(next_pageId[i])
+                UpdateNotion.update_count(next_count[i], next_pageId[i])
             except:
                 pass
         
@@ -482,7 +448,12 @@ class LearnVocab:
         self.contexts = next_context
 
     def connect_LinguaAPI(self):
+        """
+        connect_LinguaAPI()
+            Using LinguaAPI, the definitions, examples, synonyms and contexts are gathered.
+            Then they are stored into a dictionary format. 
 
+        """
         self.vocab_dic = {}
         for vocab in self.vocabs:
             url = "https://lingua-robot.p.rapidapi.com/language/v1/entries/en/" + \
@@ -536,6 +507,12 @@ class LearnVocab:
     # Send a Message using Slack API
 
     def send_vocab(self):
+        """
+        send_vocab()
+            Organizes vocab data into a clean string format. Then, with Slack API, the string is 
+            sent to Slack app. (The result can be seen on the Github page)
+    
+        """
 
         line = '****************************************\n'
         message = "Vocabs: " + str(self.vocabs).strip('[]').replace('\'', '') + '\n'
@@ -592,6 +569,16 @@ class LearnVocab:
                       data=data)
         
     def run_All(self):
+        """
+        Runs all the code above. 
+            1. Adjusts suggestion rate
+            2. selects vocab suggestions in different priority groups
+            3. selects vocab ratios for each groups
+            4. Utilizing the above information, executes update in the Notion DB
+            5. Gathers vocabulary info (definitions, examples, synonyms, and contexts) using LinguaAPI
+            6. Vocab data transformed into a string format
+            7. Using Slack API, notification is sent 
+        """
         print("Retrieving Data...")
         print()
         self.adjust_suggestionRate()
