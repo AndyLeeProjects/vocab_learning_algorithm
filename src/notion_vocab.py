@@ -9,14 +9,13 @@ import requests, json
 import numpy as np
 import pandas as pd
 import random as random
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone, timedelta
 import numpy as np
 import sys, os
 sys.path.append('C:\\NotionUpdate\\progress\\vocab_learning_algorithm\\src')
 from Notion_API import ConnectNotionDB as CN
-sys.path.append('C:\\NotionUpdate\\progress')
+sys.path.append('C:\\NotionUpdate\\progress\\vocab_learning_algorithm')
 from secret import secret
-from pathlib import Path
 
 
 """LearnVocab()
@@ -245,19 +244,24 @@ class LearnVocab:
         Args:
             count_min (int): the smallest count value in the vocab dataset
             next_index (list): the index of the vocabularies 
-
-        Returns:
-            new_selection_index: _description_
-            priority_vocabs: 
         """
         # Get high priority vocabularies
         Cnotion.find_prioritySource()
         
-        new_selection_index = []
-        priority_vocabs = []
+        # Store vocabs according to their priority
+        high_ind = [] # High  
+        new_ind = [] # High - Medium Priority (Newly created vocabs)
+        medium_ind = [] # Medium Priority
+        low_ind = [] # Low Priority
 
         print()
         print("Updating Vocabs...")
+
+        # Set up date variables
+        today = date.today()
+        today_date = str(today.strftime('%Y-%m-%d'))
+        yesterday = today - timedelta(days = 1)
+        yesterday_date = str(yesterday.strftime('%Y-%m-%d'))
 
         ind = 0
         vocab_count = count_min
@@ -270,35 +274,56 @@ class LearnVocab:
 
             # Sometimes there DNE where all of these conditions are met
             try:
+                # Set up date variables
+                last_edited = str(self.vocab_data['Last_Edited'][ind].split('T')[0])
+                date_created = str(self.vocab_data['Created'][ind].split('T')[0])
                 
                 # String Manipulation for the coherence of the Source names
                 if ':' in self.vocab_data['Source'][ind]:
                     source_name = self.vocab_data['Source'][ind].split(':')[0]
                 
-                # Condition 1: HIGH Priority
+
+                # Condition 1: High Priority
                 ## Stores vocabularies in a separate variable: priority_vocabs
-                ### - 
+                ### - conscious unchecked (not fully memorized): only suggests vocabs that are yet to be learned
+                ### - last_edited date does not match today's date: prevents redundancy in a daily scope
+                ### - priority_unique: choose from the prioritized vocab category(source)
+                ### - not in next_index: prevents repeated suggestions
                 if self.vocab_data['Count'][ind] == vocab_count and \
-                   self.vocab_data['Conscious'][ind] == False and \
-                   date.today().strftime('%Y-%m-%d') != self.vocab_data['Last_Edited'][ind] and \
-                   source_name in self.priority_unique:
+                    self.vocab_data['Conscious'][ind] == False and \
+                    today_date != last_edited and \
+                    source_name in self.priority_unique and \
+                    ind not in next_index:
+                    print(source_name, self.priority_unique)
+                    high_ind.append(ind)
 
-                    priority_vocabs.append(ind)
+                # Condition 2: Medium - High Priority
+                ## Append recently created vocabularies 
+                ### Purpose: reviewing a recently learned information within 24 hours highly increases
+                ###          the chance of registering it to the long-term memory
+                elif self.vocab_data['Count'][ind] == 0 and \
+                    date_created in [today_date, yesterday_date] and \
+                    source_name in self.priority_unique and \
+                    ind not in next_index:
+                    print(date_created, [today_date, yesterday_date], date_created in [today-date, yesterday_date])
+                    
+                    new_ind.append(ind)
 
-                # Condition 2: Medium Priority
+                # Condition 3: Medium Priority
+                ## Same with 'Condition 1' except prioritized categories
                 elif self.vocab_data['Count'][ind] == vocab_count and \
                     self.vocab_data['Conscious'][ind] == False and \
-                        date.today().strftime('%Y-%m-%d') != self.vocab_data['Last_Edited'][ind]:
+                    today_date != last_edited and \
+                    ind not in next_index:
 
-                    new_selection_index.append(ind)
+                    medium_ind.append(ind)
 
-                # Condition 3: Low Priority
+                # Condition 4: Low Priority
                 elif self.vocab_data['Count'][ind] == vocab_count and \
-                        self.vocab_data['Conscious'][ind] == False and \
-                        ind not in new_selection_index and \
-                        ind not in next_index:
+                    self.vocab_data['Conscious'][ind] == False and \
+                    ind not in next_index:
 
-                    new_selection_index.append(ind)
+                    low_ind.append(ind)
 
             # Error caused when all vocabs with the same num of Counts are
             # completely looped through
@@ -308,46 +333,72 @@ class LearnVocab:
                 pass
             ind += 1
     
-        return new_selection_index, priority_vocabs
+        self.priority_ind = {'high_ind':high_ind, 'new_ind':new_ind, 'medium_ind':medium_ind, 'low_ind':low_ind}
+
+    def vocab_suggestionRatio(self):
+        """
+        Create vocab suggestion ratio for each priority category
+            - High: .4
+            - Medium/ High: .3
+            - Medium: .2
+            - Low: .1
+        """
+        high_ratio = round(self.num_vocab_sug * .4)
+        new_ratio = round(self.num_vocab_sug * .3)
+        medium_ratio = round(self.num_vocab_sug * .2)
+        low_ratio = round(self.num_vocab_sug * .1)
+        
+        self.priority_ratio = {'high_ratio':high_ratio, 'new_ratio':new_ratio, 'medium_ratio':medium_ratio, 'low_ratio':low_ratio}
 
 
     def execute_update(self):
-        # Find where next indexes are
+        # indexes for 'next' vocabs or 'to be suggested' vocab
         next_index = [i for i in range(len(self.vocab_data['Vocab']))
                       if self.vocab_data["Next"][i] == "Next"]
-        # Find page Ids that matches Next's indexes
+
+        # pageIds for 'next' vocabs or 'to be suggested' vocab
         next_pageId = [self.vocab_data["pageId"][i] for i in next_index
                        if self.vocab_data["Next"][i] == "Next"]
-
+        
+        # Number of exposures for 'next' vocabs or 'to be suggested' vocab
         next_count = [self.vocab_data["Count"][i] for i in next_index
                       if self.vocab_data["Next"][i] == "Next"]
 
+        # Get the minimum count -> select_vocabSuggestions() for-loop starting point
         count_min = min(self.vocab_data['Count'])
         
-        new_selection_index, priority_vocabs = Cnotion.select_vocabSuggestions(count_min, next_index)
+        # Get self.priority_ind
+        self.select_vocabSuggestions(count_min, next_index)
 
+        # Get self.priority_ratio
+        self.vocab_suggestionRatio()
 
-        # random number between 0 to total length of vocabularies with the minimum count
-        if len(new_selection_index) == self.num_vocab_sug:
-            pass
-        else:
-            random_vocabs = []
+        # Randomly select vocabularies from each prioritized indexes considering their ratios and
+        # store them in new_selection_index
+        new_selection_index = []
+        for key in ['high','new','medium','low']:
+            ratio = self.priority_ratio[key + '_ratio']
+            for i in range(ratio):
+                # get random element from each list
+                try:
+                    random_selection = random.choices(self.priority_ind[key + '_ind'])[0]
+                except IndexError:
+                    break
+                new_selection_index.append(random_selection)
 
-            # If priority_vocabs is not empty, add them first before adding other vocabularies
-            if len(priority_vocabs) <= round(self.num_vocab_sug/2):
-                random_vocabs = priority_vocabs
-            else:
-                random_vocabs = priority_vocabs[:round(self.num_vocab_sug/2)]
+                # drop the selection to prevent redundancies
+                self.priority_ind[key + '_ind'].remove(random_selection)
+        
+        # If new_selection_index did not append enough vocabs, fill with low priority vocabs
+        if len(new_selection_index) < self.num_vocab_sug:
+            # Randomize low priority index
+            random.shuffle(self.priority_ind['low_ind'])
+            # get the difference 
+            diff = self.num_vocab_sug - len(new_selection_index)
+            # Fill the rest of the vocabularies with the leftovers(low priority vocabs)
+            new_selection_index = new_selection_index + self.priority_ind['low_ind'][:diff]
+            
 
-            # Run as many times to satisfy n(num_vocab_sug number of random words from the new_selection pool
-            while len(random_vocabs) < self.num_vocab_sug:
-                
-                # outputs random value in new_selection_index
-                ind = random.choices(new_selection_index)[0]
-
-                if ind not in random_vocabs:
-                    random_vocabs.append(ind)
-            new_selection_index = random_vocabs
 
         # select a new vocab pageId with randomized index
         new_selection_pageId = [self.vocab_data['pageId'][i] for i in new_selection_index]

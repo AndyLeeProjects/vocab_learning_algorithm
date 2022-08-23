@@ -12,7 +12,6 @@ import pandas as pd
 import json
 import time
 
-
 """ ConnectNotionDB 
 
 __init__: 
