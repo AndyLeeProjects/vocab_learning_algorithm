@@ -553,6 +553,5 @@ class LearnVocab:
 database_id = secret.vocab('databaseId')
 token_key = secret.notion_API("token")
 Cnotion = LearnVocab(database_id, token_key)
-
-#Cnotion.run_All()
+Cnotion.run_All()
 
