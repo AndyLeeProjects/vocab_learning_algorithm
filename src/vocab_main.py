@@ -17,7 +17,6 @@ sys.stderr = io.TextIOWrapper(sys.stderr.detach(), encoding = 'utf-8')
 
 sys.path.append('C:\\NotionUpdate\\progress\\vocab_learning_algorithm\\src')
 from Notion_API import ConnectNotionDB as CN
-from update_notion import UpdateNotion
 sys.path.append('C:\\NotionUpdate\\progress\\vocab_learning_algorithm')
 from secret import secret
 
@@ -31,13 +30,16 @@ __init__:
         3. Choose a minimum number of total vocab suggestions.
         4. Set up total exposures & a total number of suggestions.
 
+update_*:
+- The methods that begin with 'update_' utilizes PATCH HTTP method to update Notion Database. 
+- The following are the purposes for each method.
+    1. update_fromWaitlist_toNext(): Updates the vocabulary's status to 'Next' (Suggested Next).
+    2. update_fromNext_toWaitlist(): Updates the vocabulary's status to 'Waitlist'.
+    3. update_count(): Updates the exposure (count) of the vocabulary after the suggestion via Slack.
+    4. update_toConsciousness(): When the number of exposures (count) reaches 7, 
+                                    updates the vocab to Consciousness database.
+    5. update_mySQL(): Updates memorized vocabularies into MySQL database.
 
-update_MySQL():
-    Finds the Vocabularies that have the following attributes and moves them into MySQL database:
-        - Conscious Checked: Indicates that the vocab has been memorized
-        - Confidence Level == 5 (5/5 -> completely memorized): Indicates that I feel confident about the vocab and
-            is read to be transferred into MySQL database
-        
 
 adjust_suggestionRate():
     As the vocabularies in the waitlist increase & decrease in size, this method controls the 
@@ -61,6 +63,7 @@ select_vocabSuggestions():
         4. suggest completely different words than the previous suggestions
         5. suggest unique words (No redundancy within a suggestion)
 
+
 vocab_suggestionRatio():
     As vocabularies are stored into different priority levels, unique ratios are each applied to corresponding groups. 
         - These ratios will be used to pick a specific number of vocabularies from each group.
@@ -81,7 +84,7 @@ send_vocab():
 
 """
 
-class LearnVocab:
+class LearnVocab():
     
     def __init__(self, database_id:str, token_key:str):
         """
@@ -91,6 +94,7 @@ class LearnVocab:
             database_id (str): Notion database id 
             token_key (str): Integration token key 
         """
+
         # Get data from Notion_API.py
         Notion = CN(database_id, token_key)
         vocab_data = Notion.retrieve_data()
@@ -111,6 +115,95 @@ class LearnVocab:
             "Notion-Version": "2021-05-13"
         }
         
+    def update_fromWaitlist_toNext(self, pageId: str):
+        """
+        update_fromWaitlist_toNext: With the given pageId, which corresponds to a specific record (vocabulary),
+        below code will update its "select" status from 'Wait List' to 'Next.' 
+            - After selecting a new list of vocabularies, their status will be updated using this method. 
+
+        Args:
+            pageId (str): pageId of each record
+        """
+        updateUrl_to_next = f"https://api.notion.com/v1/pages/{pageId}"
+
+        update_fromWaitlist_toNext = {
+            "properties": {
+                "Next": {
+                    "select":
+                        {
+                            "name": "Next"
+                        }
+                }
+            }
+        }
+
+        response = requests.request("PATCH", updateUrl_to_next,
+                                    headers=self.headers, data=json.dumps(update_fromWaitlist_toNext))
+
+    def update_fromNext_toWaitlist(self, pageId: str):
+        """
+        update_fromNext_toWaitlist: Similar to above method, below code will update its "select" status from 'Next' to 'Wait List.' 
+            - The update occurs after the vocabularies' slack exposures
+        
+
+        Args:
+            pageId (str): pageId of each record
+        """
+        
+        updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
+
+        update_fromNext_toWaitlist = {
+            "properties": {
+                "Next": {
+                    "select":
+                        {
+                            "name": "Wait List"
+                        }
+                }
+            }
+        }
+
+        response = requests.request("PATCH", updateUrl_to_waitlist,
+                                    headers=self.headers, data=json.dumps(update_fromNext_toWaitlist))
+
+    def update_count(self, cur_count: int, pageId: str):
+        """
+        update_count: For every vocab exposure, its count increments by 1
+
+        Args:
+            cur_count (int): current count for the vocab
+            pageId (str): pageId of each record
+        """
+        updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
+        update_count = {
+            "properties": {
+                "Count": {
+                    "number": cur_count + 1
+                }
+            }}
+
+        response = requests.request("PATCH", updateUrl_to_waitlist,
+                                    headers=self.headers, data=json.dumps(update_count))
+
+    def update_toConsciousness(self, pageId: str):
+        """
+        update_toConsciousness: When the exposure count reaches 7, transfer the record to "memorized" database 
+        in Notion(or MySQL).
+
+        Args:
+            pageId (str): pageId of each record
+        """
+        # After reaching 7 exposures, the vocabulary will moved to other DB, called "conscious"
+        updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
+        update_count = {
+            "properties": {
+                "Conscious": {
+                    "checkbox": True
+                }
+            }}
+
+        response = requests.request("PATCH", updateUrl_to_waitlist,
+                                    headers=self.headers, data=json.dumps(update_count))
 
     
     def update_MySQL(self):
@@ -223,24 +316,35 @@ class LearnVocab:
         yesterday = today - timedelta(days = 1)
         yesterday_date = str(yesterday.strftime('%Y-%m-%d'))
 
+        # Set starting point
         ind = 0
         vocab_count = count_min
+
         while True:
+
+            # Assign a new variable for more concise loop
+            ## Also filter elements that are not fully memorized (Conscious == False)
+            self.vocab_data_concise = self.vocab_data.loc[self.vocab_data['Count'] == vocab_count]
+            self.vocab_data_concise = self.vocab_data_concise.loc[self.vocab_data_concise['Conscious'] == False]
+
+
             # Break when ind exceeds the total number of vocabularies AND when vocab_count(exposures) exceeds the 
             # maximum number of exposures among the vocabularies in the WaitList
-            if len(self.vocab_data['Vocab']) < ind + 1 and \
+            if len(self.vocab_data_concise['Vocab']) < ind + 1 and \
                 vocab_count == np.max(self.vocab_data['Count']):
                 break
 
-            # Sometimes there DNE where all of these conditions are met
+            # Sometimes there DNE where all of these conditions are met. Thus, try & except.
             try:
                 # Set up date variables
-                last_edited = str(self.vocab_data['Last_Edited'][ind].split('T')[0])
-                date_created = str(self.vocab_data['Created'][ind].split('T')[0])
+                last_edited = str(self.vocab_data_concise['Last_Edited'][ind].split('T')[0])
+                date_created = str(self.vocab_data_concise['Created'][ind].split('T')[0])
                 
                 # String Manipulation for the coherence of the Source names
-                if ':' in self.vocab_data['Source'][ind]:
-                    source_name = self.vocab_data['Source'][ind].split(':')[0]
+                if ':' in self.vocab_data_concise['Source'][ind]:
+                    source_name = self.vocab_data_concise['Source'][ind].split(':')[0]
+                else:
+                    source_name = self.vocab_data_concise['Source'][ind]
                 
 
                 # Condition 1: High Priority
@@ -249,48 +353,42 @@ class LearnVocab:
                 ### - last_edited date does not match today's date: prevents redundancy in a daily scope
                 ### - priority_unique: choose from the prioritized vocab category(source)
                 ### - not in next_index: prevents repeated suggestions
-                if self.vocab_data['Count'][ind] == vocab_count and \
-                    self.vocab_data['Conscious'][ind] == False and \
-                    today_date != last_edited and \
+
+                if today_date != last_edited and \
                     source_name in self.priority_unique and \
                     ind not in next_index:
-                    print(source_name, self.priority_unique)
-                    high_ind.append(ind)
 
+                    high_ind.append(ind)
+                    
                 # Condition 2: Medium - High Priority
                 ## Append recently created vocabularies 
                 ### Purpose: reviewing a recently learned information within 24 hours highly increases
                 ###          the chance of registering it to the long-term memory
-                elif self.vocab_data['Count'][ind] == 0 and \
-                    date_created in [today_date, yesterday_date] and \
-                    source_name in self.priority_unique and \
+                elif date_created in [today_date, yesterday_date] and \
                     ind not in next_index:
-                    print(date_created, [today_date, yesterday_date], date_created in [today-date, yesterday_date])
-                    
+
                     new_ind.append(ind)
 
                 # Condition 3: Medium Priority
                 ## Same with 'Condition 1' except prioritized categories
-                elif self.vocab_data['Count'][ind] == vocab_count and \
-                    self.vocab_data['Conscious'][ind] == False and \
-                    today_date != last_edited and \
+                elif today_date != last_edited and \
                     ind not in next_index:
 
                     medium_ind.append(ind)
 
                 # Condition 4: Low Priority
-                elif self.vocab_data['Count'][ind] == vocab_count and \
-                    self.vocab_data['Conscious'][ind] == False and \
-                    ind not in next_index:
+                elif ind not in next_index:
 
                     low_ind.append(ind)
 
             # Error caused when all vocabs with the same num of Counts are
             # completely looped through
-            except:
-                ind = 0
+            except KeyError:
+
+                # reset the index and go to the next vocab_count
+                ind = 0 
                 vocab_count += 1
-                pass
+                
             ind += 1
     
         self.priority_ind = {'high_ind':high_ind, 'new_ind':new_ind, 'medium_ind':medium_ind, 'low_ind':low_ind}
@@ -412,7 +510,7 @@ class LearnVocab:
         ## vocabs in the database, the maximum length is found to make sure
         ## all records get updated
         max_iteration = np.max([len(next_index), len(new_selection_index)])
-        
+
         for i in range(max_iteration):
             try:
                 nv = next_vocabs[i]
@@ -424,21 +522,21 @@ class LearnVocab:
             
             # Send the learned vocabs back to waitlist
             try:
-                UpdateNotion.update_fromNext_toWaitlist(next_pageId[i])
+                self.update_fromNext_toWaitlist(next_pageId[i])
             except:
                 pass
 
             # Update new selected vocabs
             try:
-                UpdateNotion.update_fromWaitlist_toNext(new_selection_pageId[i])
+                self.update_fromWaitlist_toNext(new_selection_pageId[i])
             except:
                 pass
 
             # If the vocab count reaches assigned total_exposure, send it to a separate DB
             try:
                 if next_count[i] >= self.total_exposures:
-                    UpdateNotion.update_toConsciousness(next_pageId[i])
-                UpdateNotion.update_count(next_count[i], next_pageId[i])
+                    self.update_toConsciousness(next_pageId[i])
+                self.update_count(next_count[i], next_pageId[i])
             except:
                 pass
         
@@ -565,8 +663,8 @@ class LearnVocab:
             'text': message
         }
 
-        requests.post(url='https://slack.com/api/chat.postMessage',
-                      data=data)
+        #requests.post(url='https://slack.com/api/chat.postMessage',
+        #              data=data)
         
     def run_All(self):
         """
@@ -585,9 +683,6 @@ class LearnVocab:
         self.execute_update()
         self.connect_LinguaAPI()
         self.send_vocab()
-
-
-
 
 
 # Suggest Vocabs 
