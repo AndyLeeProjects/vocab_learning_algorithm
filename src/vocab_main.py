@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import random as random
 from datetime import date, datetime, timezone, timedelta
-import numpy as np
 import sys, os, io
 sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding = 'utf-8') # modify encoding 
 sys.stderr = io.TextIOWrapper(sys.stderr.detach(), encoding = 'utf-8')
