@@ -663,8 +663,8 @@ class LearnVocab():
             'text': message
         }
 
-        #requests.post(url='https://slack.com/api/chat.postMessage',
-        #              data=data)
+        requests.post(url='https://slack.com/api/chat.postMessage',
+                      data=data)
         
     def run_All(self):
         """
