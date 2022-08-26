@@ -50,7 +50,8 @@ retrieve_data:
 
 class ConnectNotionDB:
     def __init__(self, database_id, token_key):
-        """Initial Setup
+        """
+        Initial Setup
 
         Args:
             database_id (str): database id can be found in the database url
@@ -67,7 +68,8 @@ class ConnectNotionDB:
 
 
     def query_databases(self):
-        """Requests Notion for an access to the designated database.
+        """
+        Requests Notion for an access to the designated database.
 
         Raises:
             ValueError: ValueError raised with incorrect input.
@@ -86,7 +88,8 @@ class ConnectNotionDB:
 
             
     def get_all_pages(self):
-        """Scrolls through all pages in the database.
+        """
+        Scrolls through all pages in the database.
             - Only applies when there are more than 100 elements in the database.
 
         Returns:
@@ -121,7 +124,8 @@ class ConnectNotionDB:
     
     
     def get_projects_titles(self):
-        """Collects the titles from the row with maximum number of title names
+        """
+        Collects the titles from the row with maximum number of title names
             - when there is empty input(s) in Notion DB, the title name does not appear 
             in the retrieved JSON data. Therefore, by finding the maximum number of 
             "non-empty" row provides the maximum number of titles names. 
@@ -142,7 +146,8 @@ class ConnectNotionDB:
         
         
     def clean_data(self):
-        """Cleans JSON data using title_type
+        """
+        Cleans JSON data using title_type
             - Types include created_time, number, checkbox, last_edited_time, multi_select
             select, rich_text, select, title, etc.
 
@@ -178,7 +183,8 @@ class ConnectNotionDB:
         return self.data
 
     def extract_nested_elements(data, key, ind):
-        """Even after cleaning the data, JSON type elements will still exist. 
+        """
+        Even after cleaning the data, JSON type elements will still exist. 
            Thus, this function provides nested_type, which will allow complete access to all elements.
 
         Args:
@@ -231,11 +237,34 @@ class ConnectNotionDB:
             return nested_type
         except:
             pass
-        
 
+
+    def printProgressBar(iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+        """
+        Call in a loop to create terminal progress bar
+
+        Args:
+            iteration   - Required (int)  : current iteration (Int)
+            total       - Required (int)  : total iterations (Int)
+            prefix      - Optional (str)  : prefix string (Str)
+            suffix      - Optional (str)  : suffix string (Str)
+            decimals    - Optional (int)  : positive number of decimals in percent complete (Int)
+            length      - Optional (int)  : character length of bar (Int)
+            fill        - Optional (str)  : bar fill character (Str)
+            printEnd    - Optional (str)  : end character (e.g. "\r", "\r\n") (Str)
+        """
+        percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+        filledLength = int(length * iteration // total)
+        bar = fill * filledLength + '-' * (length - filledLength)
+        print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
+        # Print New Line on Complete
+        if iteration == total: 
+            print()
+        
     
     def retrieve_data(self):
-        """Retrieves data from the designated database in Notion by running all methods above.
+        """
+        Retrieves data from the designated database in Notion by running all methods above.
 
         Returns:
             pandas dataframe: Default return option
