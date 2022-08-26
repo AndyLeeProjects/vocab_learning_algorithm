@@ -692,7 +692,7 @@ class LearnVocab():
             # If the vocabulary has associated image (provided in Notion), send a separate Slack message
             if isinstance(self.imgURL[c], str) == True and 'http' in self.imgURL[c]:
                 self.send_SlackImg(self.imgURL[c], message, vocab)
-                message = ''
+                message = '\n'
 
             message_full += '\n\n' + message
             message = ''
