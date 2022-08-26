@@ -342,16 +342,17 @@ class LearnVocab():
 
             # Sometimes there DNE where all of these conditions are met. Thus, try & except.
             try:
+
                 # Set up date variables
-                last_edited = str(self.vocab_data_concise['Last_Edited'][ind].split('T')[0])
-                date_created = str(self.vocab_data_concise['Created'][ind].split('T')[0])
-                
+                last_edited = str(self.vocab_data_concise['Last_Edited'].iloc[ind]).split('T')[0]
+                date_created = str(self.vocab_data_concise['Created'].iloc[ind]).split('T')[0]
+
                 # String Manipulation for the coherence of the Source names
-                if ':' in self.vocab_data_concise['Source'][ind]:
-                    source_name = self.vocab_data_concise['Source'][ind].split(':')[0]
+                if ':' in self.vocab_data_concise['Source'].iloc[ind]:
+                    source_name = str(self.vocab_data_concise['Source'].iloc[ind]).split(':')[0]
                 else:
-                    source_name = self.vocab_data_concise['Source'][ind]
-                
+                    source_name = str(self.vocab_data_concise['Source'].iloc[ind])
+
 
                 # Condition 1: High Priority
                 ## Stores vocabularies in a separate variable: priority_vocabs
@@ -363,7 +364,6 @@ class LearnVocab():
                 if today_date != last_edited and \
                     source_name in self.priority_unique and \
                     ind not in next_index:
-
                     high_ind.append(ind)
                     
                 # Condition 2: Medium - High Priority
@@ -372,24 +372,22 @@ class LearnVocab():
                 ###          the chance of registering it to the long-term memory
                 elif date_created in [today_date, yesterday_date] and \
                     ind not in next_index:
-
                     new_ind.append(ind)
 
                 # Condition 3: Medium Priority
                 ## Same with 'Condition 1' except prioritized categories
                 elif today_date != last_edited and \
                     ind not in next_index:
-
                     medium_ind.append(ind)
 
                 # Condition 4: Low Priority
                 elif ind not in next_index:
-
                     low_ind.append(ind)
+                
 
             # Error caused when all vocabs with the same num of Counts are
             # completely looped through
-            except KeyError:
+            except IndexError:
 
                 # reset the index and go to the next vocab_count
                 ind = 0 
@@ -450,18 +448,29 @@ class LearnVocab():
         # store them in new_selection_index
         new_selection_index = []
         for key in ['high','new','medium','low']:
+
+            # Get the ratio of each priority level
             ratio = self.priority_ratio[key + '_ratio']
+
             for i in range(ratio):
                 # get random element from each list
+                print(key, ratio, i)
+                random_selection = []
                 try:
-                    random_selection = random.choices(self.priority_ind[key + '_ind'])[0]
+                    random_selection.append(random.choices(self.priority_ind[key + '_ind'])[0])
                 except IndexError:
                     break
-                new_selection_index.append(random_selection)
 
-                # drop the selection to prevent redundancies
+            # Append random_selection into new_selection_index
+            new_selection_index += random_selection
+
+            # Drop the selection to prevent redundancies
+            ## If no vocabulary was passed for particular priority level, skip removal 
+            try:
                 self.priority_ind[key + '_ind'].remove(random_selection)
-        
+            except ValueError:
+                pass
+
         # If new_selection_index did not append enough vocabs, fill with low priority vocabs
         if len(new_selection_index) < self.num_vocab_sug:
             # Randomize low priority index
