@@ -5,12 +5,14 @@ Created on Tue Jan 18 06:42:07 2022
 @author: Andy
 """
 
+from email import message
 import requests, json
 import numpy as np
 import pandas as pd
 import random as random
 from datetime import date, datetime, timezone, timedelta
 import sys, os, io
+from slack import WebClient
 sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding = 'utf-8') # modify encoding 
 sys.stderr = io.TextIOWrapper(sys.stderr.detach(), encoding = 'utf-8')
 
@@ -28,6 +30,7 @@ __init__:
         2. Defines Slack token and Linguistic API key for later use.
         3. Choose a minimum number of total vocab suggestions.
         4. Set up total exposures & a total number of suggestions.
+
 
 update_*:
 - The methods that begin with 'update_' utilizes PATCH HTTP method to update Notion Database. 
@@ -77,7 +80,11 @@ connect_LinguaAPI():
     Retrieves vocabulary definition, sentence examples, synonyms, and contexts.
 
 
-send_vocab():
+send_SlackImg():
+    Sends jpg files associated with the vocabulary by using the img url provided by the user on Notion database.
+
+
+send_SlackMessage():
     Using the information retrieved from LinguaAPI, a string format message is generated. Then 
     using the Slack API, the message is sent at scheduled times.
 
@@ -477,20 +484,25 @@ class LearnVocab():
         next_source = []
         next_count = []
         next_context = []
+        next_imgURL = []
 
         for i in range(len(new_selection_index)):
             # Prevent an error caused by changing the total number of vocab suggestions
             try:
+                # Append vocab info for the New Selection Vocabularies (New Next)
                 new_selection_vocab.append(
                     self.vocab_data['Vocab'][new_selection_index[i]])
                 new_selection_source.append(
                     self.vocab_data['Source'][new_selection_index[i]])
                 new_selection_count.append(
                     self.vocab_data['Count'][new_selection_index[i]])
+
+                # Append vocab inf for the Next Vocabularies (Old Next)
                 next_vocabs.append(self.vocab_data['Vocab'][next_index[i]])
                 next_source.append(self.vocab_data['Source'][next_index[i]])
                 next_count.append(self.vocab_data['Count'][next_index[i]])
                 next_context.append(self.vocab_data['Context'][next_index[i]])
+                next_imgURL.append(self.vocab_data['imgURL'][next_index[i]])
             except:
                 pass
 
@@ -543,6 +555,7 @@ class LearnVocab():
         self.sources = next_source
         self.counts = next_count
         self.contexts = next_context
+        self.imgURL = next_imgURL
 
     def connect_LinguaAPI(self):
         """
@@ -603,29 +616,53 @@ class LearnVocab():
 
     # Send a Message using Slack API
 
-    def send_vocab(self):
+    def send_SlackImg(self, url:str, msg:str, filename:str):
         """
-        send_vocab()
+        send_SlackImg()
+            Sends images associated with the vocabulary with separate API call
+        """
+    
+        response = requests.get(url)
+        img = bytes(response.content) # convert image to binary
+
+
+        # Authenticate to the Slack API via the generated token
+        client = WebClient(secret.connect_slack('token_key'))
+        # Send the image
+        client.files_upload(
+                channels = secret.connect_slack('user_id_vocab'),
+                initial_comment = msg,
+                filename = filename,
+                content = img)
+
+
+
+    def send_SlackMessage(self):
+        """
+        send_SlackMessage()
             Organizes vocab data into a clean string format. Then, with Slack API, the string is 
             sent to Slack app. (The result can be seen on the Github page)
     
         """
 
+        
+        message_full = ""
+        message = ''
         line = '****************************************\n'
-        message = "Vocabs: " + str(self.vocabs).strip('[]').replace('\'', '') + '\n'
 
-        c = 0
-        for k in self.vocab_dic.keys():
-            all_def = self.vocab_dic[k][0]['definitions']
-            all_ex = self.vocab_dic[k][0]['examples']
-            all_sy = self.vocab_dic[k][0]['synonyms']
+        for c, vocab in enumerate(self.vocab_dic.keys()):
+            all_def = self.vocab_dic[vocab][0]['definitions']
+            all_ex = self.vocab_dic[vocab][0]['examples']
+            all_sy = self.vocab_dic[vocab][0]['synonyms']
             message += line
-            message += 'Vocab %d: ' % (c+1) + k + '\n'
+            message += 'Vocab %d: ' % (c+1) + vocab + '\n'
             message += 'Source: ' + self.sources[c] + '\n'
             message += line
             
-            if self.contexts[c] != np.nan and self.contexts[c] != None: 
+            # Add Contexts of the vocabulary (provided in Notion database by the user)
+            if isinstance(self.contexts[c], str) == True:
                 message += 'Context: ' + str(self.contexts[c]) + '\n'
+            
             try:
                 # Write Definitions
                 if all_def != np.nan and all_def != None:
@@ -650,16 +687,22 @@ class LearnVocab():
 
             except:
                 pass
-            message += '\n\n'
-            c += 1
+
+            # If the vocabulary has associated image (provided in Notion), send a separate Slack message
+            if isinstance(self.imgURL[c], str) == True and 'http' in self.imgURL[c]:
+                self.send_SlackImg(self.imgURL[c], message, vocab)
+                message = ''
+
+            message_full += '\n\n' + message
+            message = ''
 
         print(message)
 
         data = {
-            'token': secret.connect_slack("slack_token"),
+            'token': secret.connect_slack("token_key"),
             'channel': secret.connect_slack("user_id_vocab"),    # User ID.
             'as_user': True,
-            'text': message
+            'text': message_full
         }
 
         requests.post(url='https://slack.com/api/chat.postMessage',
@@ -681,7 +724,7 @@ class LearnVocab():
         self.adjust_suggestionRate()
         self.execute_update()
         self.connect_LinguaAPI()
-        self.send_vocab()
+        self.send_SlackMessage()
 
 
 # Suggest Vocabs 
