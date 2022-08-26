@@ -201,7 +201,7 @@ class LearnVocab():
         """
         # After reaching 7 exposures, the vocabulary will moved to other DB, called "conscious"
         updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
-        update_count = {
+        update_conscious = {
             "properties": {
                 "Conscious": {
                     "checkbox": True
@@ -209,7 +209,7 @@ class LearnVocab():
             }}
 
         response = requests.request("PATCH", updateUrl_to_waitlist,
-                                    headers=self.headers, data=json.dumps(update_count))
+                                    headers=self.headers, data=json.dumps(update_conscious))
 
     
     def update_MySQL(self):
@@ -500,7 +500,7 @@ class LearnVocab():
                 # Append vocab inf for the Next Vocabularies (Old Next)
                 next_vocabs.append(self.vocab_data['Vocab'][next_index[i]])
                 next_source.append(self.vocab_data['Source'][next_index[i]])
-                next_count.append(self.vocab_data['Count'][next_index[i]])
+                next_count.append(int(self.vocab_data['Count'][next_index[i]]))
                 next_context.append(self.vocab_data['Context'][next_index[i]])
                 next_imgURL.append(self.vocab_data['imgURL'][next_index[i]])
             except:
@@ -534,6 +534,7 @@ class LearnVocab():
             # Send the learned vocabs back to waitlist
             try:
                 self.update_fromNext_toWaitlist(next_pageId[i])
+                self.update_count(next_count[i], next_pageId[i])
             except:
                 pass
 
@@ -666,7 +667,7 @@ class LearnVocab():
             try:
                 # Write Definitions
                 if all_def != np.nan and all_def != None:
-                    message += 'Definition: \n'
+                    message += '\nDefinition: \n'
                 for definition in range(len(all_def)):
                     message += '\t - ' + all_def[definition] + '\n'
 
@@ -696,7 +697,7 @@ class LearnVocab():
             message_full += '\n\n' + message
             message = ''
 
-        print(message)
+        print(message_full)
 
         data = {
             'token': secret.connect_slack("token_key"),
