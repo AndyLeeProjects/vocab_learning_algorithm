@@ -12,7 +12,7 @@ import pandas as pd
 import random as random
 from datetime import date, datetime, timezone, timedelta
 import sys, os, io
-from slack import WebClient
+import slack
 sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding = 'utf-8') # modify encoding 
 sys.stderr = io.TextIOWrapper(sys.stderr.detach(), encoding = 'utf-8')
 
@@ -432,7 +432,7 @@ class LearnVocab():
                 3. If any of the vocabs' total exposure is greater than equal to 7, move them to a consciousness database.
         """
         # indexes for 'next' vocabs or 'to be suggested' vocab
-        next_index = [i for i in range(len(self.vocab_data['Vocab']))
+        next_index = [self.vocab_data['Index'][i] for i in range(len(self.vocab_data['Vocab']))
                       if self.vocab_data["Next"][i] == "Next"]
 
         # pageIds for 'next' vocabs or 'to be suggested' vocab
@@ -654,7 +654,7 @@ class LearnVocab():
 
 
         # Authenticate to the Slack API via the generated token
-        client = WebClient(secret.connect_slack('token_key'))
+        client = slack.WebClient(secret.connect_slack('token_key'))
         # Send the image
         client.files_upload(
                 channels = secret.connect_slack('user_id_vocab'),
