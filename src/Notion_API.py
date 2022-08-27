@@ -49,7 +49,7 @@ retrieve_data:
 
 
 class ConnectNotionDB:
-    def __init__(self, database_id, token_key):
+    def __init__(self, database_id, token_key, filters = None):
         """
         Initial Setup
 
@@ -60,10 +60,14 @@ class ConnectNotionDB:
         self.database_id = database_id
         self.token_key = token_key
         self.headers = headers = {
-            "Authorization": "Bearer " + self.token_key,
+            "Accept": "application/json",
+            "Notion-Version": "2021-05-13",
             "Content-Type": "application/json",
-            "Notion-Version": "2021-05-13"
+            "Authorization": "Bearer " + self.token_key
         }
+
+        if filters != None:
+            self.filters = filters
 
 
 
@@ -78,7 +82,7 @@ class ConnectNotionDB:
             JSON data 
         """
         database_url = 'https://api.notion.com/v1/databases/' + self.database_id + "/query"
-        response = requests.post(database_url, headers=self.headers)
+        response = requests.post(database_url, json=self.filters, headers=self.headers)
         if response.status_code != 200:
             raise ValueError(f'Response Status: {response.status_code}')
         else:
@@ -108,10 +112,8 @@ class ConnectNotionDB:
                 self.json['start_cursor'] = next_cur
                 data_hidden = json.dumps(self.json)
 
-                # Gets the next 100 results
-                payload = {"page_size": 100}
                 data_hidden = requests.post(
-                    readUrl, json = payload, headers=self.headers, data=data_hidden).json()
+                    readUrl, json=self.filters, headers=self.headers, data=data_hidden).json()
 
                 self.json["results"] += data_hidden["results"]
                 next_cur = data_hidden['next_cursor']
@@ -120,6 +122,7 @@ class ConnectNotionDB:
                     break
         except:
             pass
+        
         return self.json
     
     
@@ -272,4 +275,6 @@ class ConnectNotionDB:
         jsn = self.query_databases()
         jsn_all = self.get_all_pages()
         titles = self.get_projects_titles()
-        return  pd.DataFrame(self.clean_data())
+        df = pd.DataFrame(self.clean_data())
+        df['Index'] = range(0, len(df))
+        return df

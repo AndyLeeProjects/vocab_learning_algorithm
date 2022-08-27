@@ -102,7 +102,16 @@ class LearnVocab():
         """
 
         # Get data from Notion_API.py
-        Notion = CN(database_id, token_key)
+        filters = filters = {
+                "filter": {
+                    "property": "Next",
+                    "select": {
+                        "does_not_equal": "Memorized"
+                    }
+                }
+            }
+
+        Notion = CN(database_id, token_key, filters)
         vocab_data = Notion.retrieve_data()
         self.vocab_data = vocab_data        
         
@@ -327,7 +336,7 @@ class LearnVocab():
         vocab_count = count_min
 
         while True:
-
+            print(vocab_count, ind)
             # Assign a new variable for more concise loop
             ## Also filter elements that are not fully memorized (Conscious == False)
             self.vocab_data_concise = self.vocab_data.loc[self.vocab_data['Count'] == vocab_count]
@@ -359,11 +368,10 @@ class LearnVocab():
                 ### - last_edited date does not match today's date: prevents redundancy in a daily scope
                 ### - priority_unique: choose from the prioritized vocab category(source)
                 ### - not in next_index: prevents repeated suggestions
-
                 if today_date != last_edited and \
                     source_name in self.priority_unique and \
                     ind not in next_index:
-                    high_ind.append(ind)
+                    high_ind.append(self.vocab_data_concise['Index'].iloc[ind])
                     
                 # Condition 2: Medium - High Priority
                 ## Append recently created vocabularies 
@@ -371,17 +379,17 @@ class LearnVocab():
                 ###          the chance of registering it to the long-term memory
                 elif date_created in [today_date, yesterday_date] and \
                     ind not in next_index:
-                    new_ind.append(ind)
+                    new_ind.append(self.vocab_data_concise['Index'].iloc[ind])
 
                 # Condition 3: Medium Priority
                 ## Same with 'Condition 1' except prioritized categories
                 elif today_date != last_edited and \
                     ind not in next_index:
-                    medium_ind.append(ind)
+                    medium_ind.append(self.vocab_data_concise['Index'].iloc[ind])
 
                 # Condition 4: Low Priority
                 elif ind not in next_index:
-                    low_ind.append(ind)
+                    low_ind.append(self.vocab_data_concise['Index'].iloc[ind])
                 
 
             # Error caused when all vocabs with the same num of Counts are
@@ -396,18 +404,19 @@ class LearnVocab():
     
         self.priority_ind = {'high_ind':high_ind, 'new_ind':new_ind, 'medium_ind':medium_ind, 'low_ind':low_ind}
 
+
     def vocab_suggestionRatio(self):
         """
         Create vocab suggestion ratio for each priority category
-            - High: .4
+            - High: .3
             - Medium/ High: .3
             - Medium: .2
-            - Low: .1
+            - Low: .2
         """
-        high_ratio = round(self.num_vocab_sug * .4)
+        high_ratio = round(self.num_vocab_sug * .3)
         new_ratio = round(self.num_vocab_sug * .3)
         medium_ratio = round(self.num_vocab_sug * .2)
-        low_ratio = round(self.num_vocab_sug * .1)
+        low_ratio = round(self.num_vocab_sug * .2)
         
         self.priority_ratio = {'high_ratio':high_ratio, 'new_ratio':new_ratio, 'medium_ratio':medium_ratio, 'low_ratio':low_ratio}
 
@@ -451,32 +460,42 @@ class LearnVocab():
             # Get the ratio of each priority level
             ratio = self.priority_ratio[key + '_ratio']
 
-            for i in range(ratio):
-                # get random element from each list
-                random_selection = []
-                try:
-                    random_selection.append(random.choices(self.priority_ind[key + '_ind'])[0])
-                except IndexError:
+            # get UNIQUE random element from each list
+            random_selections = []
+            c = 0
+            while len(random_selections) < ratio:
+                random_select = random.choices(self.priority_ind[key + '_ind'])[0]
+                if random_select not in random_selections and random_select not in new_selection_index:
+                    random_selections.append(random_select)
+                if c == len(self.priority_ind[key + '_ind']):
                     break
+                c += 1
+
 
             # Append random_selection into new_selection_index
-            new_selection_index += random_selection
+            new_selection_index += random_selections
 
             # Drop the selection to prevent redundancies
             ## If no vocabulary was passed for particular priority level, skip removal 
             try:
-                self.priority_ind[key + '_ind'].remove(random_selection)
+                self.priority_ind[key + '_ind'].remove(random_selections)
             except ValueError:
                 pass
-
+        
+        print("new_selection_index: ", new_selection_index, len(new_selection_index))
+        print("self.num_vocab_sug", self.num_vocab_sug)
         # If new_selection_index did not append enough vocabs, fill with low priority vocabs
         if len(new_selection_index) < self.num_vocab_sug:
-            # Randomize low priority index
-            random.shuffle(self.priority_ind['low_ind'])
+            # Randomize low priority index & remove duplicates
+            leftovers = list(set(self.priority_ind['low_ind']))
+            random.shuffle(leftovers)
+            
             # get the difference 
             diff = self.num_vocab_sug - len(new_selection_index)
+            
             # Fill the rest of the vocabularies with the leftovers(low priority vocabs)
-            new_selection_index = new_selection_index + self.priority_ind['low_ind'][:diff]
+            leftovers = [l for l in leftovers if l not in new_selection_index]
+            new_selection_index = new_selection_index + leftovers[:diff]
             
 
 
