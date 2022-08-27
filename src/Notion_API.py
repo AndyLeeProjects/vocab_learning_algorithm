@@ -280,3 +280,12 @@ class ConnectNotionDB:
         df = pd.DataFrame(self.clean_data())
         df['Index'] = range(0, len(df))
         return df
+
+
+
+Notion = ConnectNotionDB('3b592e17672c4943b51e0776eea52be3', 'secret_WCXYCVzuU52uLqAdYvJZRtpnd3UD4vR1c85iPFr0n55')
+data = Notion.retrieve_data()
+next_index = [data['Index'][i] for i in range(len(data['Vocab']))
+                      if data["Status"][i] == "Next"]
+
+print(next_index)

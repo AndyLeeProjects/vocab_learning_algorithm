@@ -379,6 +379,9 @@ class LearnVocab():
                     source_name = str(self.vocab_data_concise['Source'].iloc[ind]).split(':')[0]
                 else:
                     source_name = str(self.vocab_data_concise['Source'].iloc[ind])
+                
+                # Create shortcut for iterating index
+                ind_cur = self.vocab_data_concise['Index'].iloc[ind]
 
 
                 # Condition 1: High Priority
@@ -389,7 +392,7 @@ class LearnVocab():
                 ### - not in next_index: prevents repeated suggestions
                 if today_date != last_edited and \
                     source_name in self.priority_unique and \
-                    ind not in next_index:
+                    ind_cur not in next_index:
                     high_ind.append(self.vocab_data_concise['Index'].iloc[ind])
                     
                 # Condition 2: Medium - High Priority
@@ -397,17 +400,17 @@ class LearnVocab():
                 ### Purpose: reviewing a recently learned information within 24 hours highly increases
                 ###          the chance of registering it to the long-term memory
                 elif date_created in [today_date, yesterday_date] and \
-                    ind not in next_index:
+                    ind_cur not in next_index:
                     new_ind.append(self.vocab_data_concise['Index'].iloc[ind])
 
                 # Condition 3: Medium Priority
                 ## Same with 'Condition 1' except prioritized categories
                 elif today_date != last_edited and \
-                    ind not in next_index:
+                    ind_cur not in next_index:
                     medium_ind.append(self.vocab_data_concise['Index'].iloc[ind])
 
                 # Condition 4: Low Priority
-                elif ind not in next_index:
+                elif ind_cur not in next_index:
                     low_ind.append(self.vocab_data_concise['Index'].iloc[ind])
                 
 
@@ -452,7 +455,6 @@ class LearnVocab():
         # indexes for 'next' vocabs or 'to be suggested' vocab
         next_index = [self.vocab_data['Index'][i] for i in range(len(self.vocab_data['Vocab']))
                       if self.vocab_data["Status"][i] == "Next"]
-        print("Next Index: ", next_index)
 
         # pageIds for 'next' vocabs or 'to be suggested' vocab
         next_pageId = [self.vocab_data["pageId"][i] for i in next_index
