@@ -35,12 +35,11 @@ __init__:
 update_*:
 - The methods that begin with 'update_' utilizes PATCH HTTP method to update Notion Database. 
 - The following are the purposes for each method.
-    1. update_fromWaitlist_toNext(): Updates the vocabulary's status to 'Next' (Suggested Next).
-    2. update_fromNext_toWaitlist(): Updates the vocabulary's status to 'Waitlist'.
-    3. update_count(): Updates the exposure (count) of the vocabulary after the suggestion via Slack.
-    4. update_toConsciousness(): When the number of exposures (count) reaches 7, 
+    1. update_status(): Updates the vocabulary's status to "Wait List", "Next", "Memorized".
+    2. update_count(): Updates the exposure (count) of the vocabulary after the suggestion via Slack.
+    3. update_toConsciousness(): When the number of exposures (count) reaches 7, 
                                     updates the vocab to Consciousness database.
-    5. update_mySQL(): Updates memorized vocabularies into MySQL database.
+    4. update_mySQL(): Updates memorized vocabularies into MySQL database.
 
 
 adjust_suggestionRate():
@@ -102,18 +101,45 @@ class LearnVocab():
         """
 
         # Get data from Notion_API.py
-        filters = filters = {
+
+        filters_unmemorized = {
                 "filter": {
-                    "property": "Next",
+                    "property": "Status",
                     "select": {
                         "does_not_equal": "Memorized"
                     }
                 }
             }
 
-        Notion = CN(database_id, token_key, filters)
-        vocab_data = Notion.retrieve_data()
-        self.vocab_data = vocab_data        
+        filters_memorized = {
+            "filter": {
+                "and": [
+                    {
+                        "property": "Status",
+                        "select": {
+                            "equals": "Wait List"
+                        }
+                    },
+                    {
+                        "property": "Confidence Level (Num)",
+                        "number": {
+                            "equals": 5
+                        }
+                    }
+                ]
+            }
+        }
+
+        # Get working vocab_data 
+        Notion = CN(database_id, token_key, filters_unmemorized)
+        self.vocab_data = Notion.retrieve_data()        
+
+        # Get memorized data to update their settings
+        try:
+            Notion = CN(database_id, token_key, filters_memorized)
+            self.vocab_data_memorized = Notion.retrieve_data()
+        except:
+            self.vocab_data_memorized = []
         
         # Total number of vocabularies for each slack notification 
         ## num_vocab_sug will change depending on the total number of vocabularies on the waitlist
@@ -130,56 +156,31 @@ class LearnVocab():
             "Notion-Version": "2021-05-13"
         }
         
-    def update_fromWaitlist_toNext(self, pageId: str):
+    def update_Status(self, pageId: str, status: str):
         """
-        update_fromWaitlist_toNext: With the given pageId, which corresponds to a specific record (vocabulary),
-        below code will update its "select" status from 'Wait List' to 'Next.' 
+        update_Status: With the given pageId, which corresponds to a specific record (vocabulary),
+        it updates the status of the vocabulary: "Waitlist", "Next", "Memorized"
             - After selecting a new list of vocabularies, their status will be updated using this method. 
 
         Args:
             pageId (str): pageId of each record
         """
-        updateUrl_to_next = f"https://api.notion.com/v1/pages/{pageId}"
+        update_url = f"https://api.notion.com/v1/pages/{pageId}"
 
-        update_fromWaitlist_toNext = {
+        update_status_json = {
             "properties": {
-                "Next": {
+                "Status": {
                     "select":
                         {
-                            "name": "Next"
+                            "name": status
                         }
                 }
             }
         }
 
-        response = requests.request("PATCH", updateUrl_to_next,
-                                    headers=self.headers, data=json.dumps(update_fromWaitlist_toNext))
+        response = requests.request("PATCH", update_url,
+                                    headers=self.headers, data=json.dumps(update_status_json))
 
-    def update_fromNext_toWaitlist(self, pageId: str):
-        """
-        update_fromNext_toWaitlist: Similar to above method, below code will update its "select" status from 'Next' to 'Wait List.' 
-            - The update occurs after the vocabularies' slack exposures
-        
-
-        Args:
-            pageId (str): pageId of each record
-        """
-        
-        updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
-
-        update_fromNext_toWaitlist = {
-            "properties": {
-                "Next": {
-                    "select":
-                        {
-                            "name": "Wait List"
-                        }
-                }
-            }
-        }
-
-        response = requests.request("PATCH", updateUrl_to_waitlist,
-                                    headers=self.headers, data=json.dumps(update_fromNext_toWaitlist))
 
     def update_count(self, cur_count: int, pageId: str):
         """
@@ -189,7 +190,7 @@ class LearnVocab():
             cur_count (int): current count for the vocab
             pageId (str): pageId of each record
         """
-        updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
+        update_url = f"https://api.notion.com/v1/pages/{pageId}"
         update_count = {
             "properties": {
                 "Count": {
@@ -197,8 +198,9 @@ class LearnVocab():
                 }
             }}
 
-        response = requests.request("PATCH", updateUrl_to_waitlist,
+        response = requests.request("PATCH", update_url,
                                     headers=self.headers, data=json.dumps(update_count))
+
 
     def update_toConsciousness(self, pageId: str):
         """
@@ -209,7 +211,7 @@ class LearnVocab():
             pageId (str): pageId of each record
         """
         # After reaching 7 exposures, the vocabulary will moved to other DB, called "conscious"
-        updateUrl_to_waitlist = f"https://api.notion.com/v1/pages/{pageId}"
+        update_url = f"https://api.notion.com/v1/pages/{pageId}"
         update_conscious = {
             "properties": {
                 "Conscious": {
@@ -217,7 +219,7 @@ class LearnVocab():
                 }
             }}
 
-        response = requests.request("PATCH", updateUrl_to_waitlist,
+        response = requests.request("PATCH", update_url,
                                     headers=self.headers, data=json.dumps(update_conscious))
 
     
@@ -245,7 +247,25 @@ class LearnVocab():
             delta > 13:
                 mastered_vocabs.append(v)
 
+
+    def fill_emptyCells(self):
+
+        # find rows with missing values
+        missing_records_entry = [self.vocab_data['pageId'].iloc[i] for i in range(len(self.vocab_data))
+        if str(self.vocab_data['Count'].iloc[i]) == 'nan' or str(self.vocab_data['Status'].iloc[i]) == 'nan']
         
+        # Fill in the missing cells (Count and Status) using their pageIds
+        for m in range(len(missing_records_entry)):
+            self.update_count(-1, missing_records_entry[m])
+            self.update_Status(missing_records_entry[m], "Wait List")
+
+        # Update the incorrectly inputted cells (Status) using their pageIds
+        if self.vocab_data_memorized != []:
+            missing_records_memorized = self.vocab_data_memorized['pageId']
+            for m in range(len(missing_records_memorized)):
+                self.update_Status(missing_records_memorized[m], "Memorized")
+
+
 
     def adjust_suggestionRate(self):
         """
@@ -420,7 +440,6 @@ class LearnVocab():
         
         self.priority_ratio = {'high_ratio':high_ratio, 'new_ratio':new_ratio, 'medium_ratio':medium_ratio, 'low_ratio':low_ratio}
 
-
     def execute_update(self):
         """
         execute_update():
@@ -433,15 +452,16 @@ class LearnVocab():
         """
         # indexes for 'next' vocabs or 'to be suggested' vocab
         next_index = [self.vocab_data['Index'][i] for i in range(len(self.vocab_data['Vocab']))
-                      if self.vocab_data["Next"][i] == "Next"]
+                      if self.vocab_data["Status"][i] == "Next"]
+        print("Next Index: ", next_index)
 
         # pageIds for 'next' vocabs or 'to be suggested' vocab
         next_pageId = [self.vocab_data["pageId"][i] for i in next_index
-                       if self.vocab_data["Next"][i] == "Next"]
+                       if self.vocab_data["Status"][i] == "Next"]
         
         # Number of exposures for 'next' vocabs or 'to be suggested' vocab
         next_count = [self.vocab_data["Count"][i] for i in next_index
-                      if self.vocab_data["Next"][i] == "Next"]
+                      if self.vocab_data["Status"][i] == "Next"]
 
         # Get the minimum count -> select_vocabSuggestions() for-loop starting point
         count_min = min(self.vocab_data['Count'])
@@ -559,14 +579,14 @@ class LearnVocab():
             
             # Send the learned vocabs back to waitlist
             try:
-                self.update_fromNext_toWaitlist(next_pageId[i])
+                self.update_Status(next_pageId[i], "Wait List")
                 self.update_count(next_count[i], next_pageId[i])
             except:
                 pass
 
             # Update new selected vocabs
             try:
-                self.update_fromWaitlist_toNext(new_selection_pageId[i])
+                self.update_Status(new_selection_pageId[i], "Next")
             except:
                 pass
 
@@ -748,6 +768,7 @@ class LearnVocab():
         """
         print("Retrieving Data...")
         print()
+        self.fill_emptyCells()
         self.adjust_suggestionRate()
         self.execute_update()
         self.connect_LinguaAPI()

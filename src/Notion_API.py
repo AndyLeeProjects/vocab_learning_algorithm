@@ -68,6 +68,8 @@ class ConnectNotionDB:
 
         if filters != None:
             self.filters = filters
+        else:
+            self.filters = None
 
 
 
