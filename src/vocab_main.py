@@ -342,7 +342,6 @@ class LearnVocab():
 
             # Sometimes there DNE where all of these conditions are met. Thus, try & except.
             try:
-
                 # Set up date variables
                 last_edited = str(self.vocab_data_concise['Last_Edited'].iloc[ind]).split('T')[0]
                 date_created = str(self.vocab_data_concise['Created'].iloc[ind]).split('T')[0]
@@ -454,7 +453,6 @@ class LearnVocab():
 
             for i in range(ratio):
                 # get random element from each list
-                print(key, ratio, i)
                 random_selection = []
                 try:
                     random_selection.append(random.choices(self.priority_ind[key + '_ind'])[0])
