@@ -260,7 +260,7 @@ class LearnVocab():
             self.update_Status(missing_records_entry[m], "Wait List")
 
         # Update the incorrectly inputted cells (Status) using their pageIds
-        if self.vocab_data_memorized != []:
+        if isinstance(self.vocab_data_memorized, list) == False:
             missing_records_memorized = self.vocab_data_memorized['pageId']
             for m in range(len(missing_records_memorized)):
                 self.update_Status(missing_records_memorized[m], "Memorized")
@@ -356,7 +356,6 @@ class LearnVocab():
         vocab_count = count_min
 
         while True:
-            print(vocab_count, ind)
             # Assign a new variable for more concise loop
             ## Also filter elements that are not fully memorized (Conscious == False)
             self.vocab_data_concise = self.vocab_data.loc[self.vocab_data['Count'] == vocab_count]
@@ -484,7 +483,10 @@ class LearnVocab():
             random_selections = []
             c = 0
             while len(random_selections) < ratio:
-                random_select = random.choices(self.priority_ind[key + '_ind'])[0]
+                try:
+                    random_select = random.choices(self.priority_ind[key + '_ind'])[0]
+                except:
+                    break
                 if random_select not in random_selections and random_select not in new_selection_index:
                     random_selections.append(random_select)
                 if c == len(self.priority_ind[key + '_ind']):
