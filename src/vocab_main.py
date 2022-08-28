@@ -364,6 +364,7 @@ class LearnVocab():
 
             # Break when ind exceeds the total number of vocabularies AND when vocab_count(exposures) exceeds the 
             # maximum number of exposures among the vocabularies in the WaitList
+            print(vocab_count, ind)
             if len(self.vocab_data_concise['Vocab']) < ind + 1 and \
                 vocab_count == np.max(self.vocab_data['Count']):
                 break
