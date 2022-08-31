@@ -252,12 +252,20 @@ class LearnVocab():
 
         # find rows with missing values
         missing_records_entry = [self.vocab_data['pageId'].iloc[i] for i in range(len(self.vocab_data))
-        if str(self.vocab_data['Count'].iloc[i]) == 'nan' or str(self.vocab_data['Status'].iloc[i]) == 'nan']
+            if str(self.vocab_data['Count'].iloc[i]) == 'nan' or str(self.vocab_data['Status'].iloc[i]) == 'nan']
         
         # Fill in the missing cells (Count and Status) using their pageIds
         for m in range(len(missing_records_entry)):
             self.update_count(-1, missing_records_entry[m])
             self.update_Status(missing_records_entry[m], "Wait List")
+            
+            # find its index
+            modified_ind = self.vocab_data[self.vocab_data['pageId'] == missing_records_entry[m]]['Index']
+            
+            # Modify the vocab_data Data frame
+            self.vocab_data['Count'].iloc[modified_ind] = 0.0
+            self.vocab_data['Status'].iloc[modified_ind] = 'Wait List'
+
 
         # Update the incorrectly inputted cells (Status) using their pageIds
         if isinstance(self.vocab_data_memorized, list) == False:
@@ -364,7 +372,6 @@ class LearnVocab():
 
             # Break when ind exceeds the total number of vocabularies AND when vocab_count(exposures) exceeds the 
             # maximum number of exposures among the vocabularies in the WaitList
-            print(vocab_count, ind)
             if len(self.vocab_data_concise['Vocab']) < ind + 1 and \
                 vocab_count == np.max(self.vocab_data['Count']):
                 break
