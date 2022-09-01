@@ -612,7 +612,7 @@ class LearnVocab():
 
             # If the vocab count reaches assigned total_exposure, send it to a separate DB
             try:
-                if next_count[i] >= self.total_exposures:
+                if next_count[i] >= self.total_exposures - 1:
                     self.update_toConsciousness(next_pageId[i])
                 self.update_count(next_count[i], next_pageId[i])
             except:
