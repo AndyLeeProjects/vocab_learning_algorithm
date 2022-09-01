@@ -9,7 +9,7 @@ from email import message
 import requests, json
 import numpy as np
 import pandas as pd
-import random as random
+import random
 from datetime import date, datetime, timezone, timedelta
 import sys, os, io
 import slack
@@ -83,6 +83,11 @@ send_SlackImg():
     Sends jpg files associated with the vocabulary by using the img url provided by the user on Notion database.
 
 
+send_slackMP3()
+    Baroque is known to be good for improving memory while studying. Thus, by randomly selecting mp3 files
+    it sends it for every slack notification. Also, mp3 files have 3 ~ 5 mins of short duration.
+
+
 send_SlackMessage():
     Using the information retrieved from LinguaAPI, a string format message is generated. Then 
     using the Slack API, the message is sent at scheduled times.
@@ -148,6 +153,9 @@ class LearnVocab():
 
         # When it reaches the total_exposures, move to "memorized" database for testing
         self.total_exposures = 7
+
+        # Authenticate to the Slack API via the generated token
+        self.client = slack.WebClient(secret.connect_slack('token_key'))
         
         # Set Headers for Notion API
         self.headers = {
@@ -684,15 +692,29 @@ class LearnVocab():
         response = requests.get(url)
         img = bytes(response.content) # convert image to binary
 
-
-        # Authenticate to the Slack API via the generated token
-        client = slack.WebClient(secret.connect_slack('token_key'))
         # Send the image
-        client.files_upload(
+        self.client.files_upload(
                 channels = secret.connect_slack('user_id_vocab'),
                 initial_comment = msg,
                 filename = filename,
                 content = img)
+    
+    def send_slackMP3(self):
+        """
+        send_slackMP3()
+            - Baroque is known to be good for improving memory while studying. Thus, by randomly selecting mp3 files
+              it sends it for every slack notification.
+            - mp3 files have 3 ~ 5 mins of short duration
+
+        """
+        mp3_files = ['concerto', 'sinfonia', 'vivaldi']
+
+        # Send the image
+        self.client.files_upload(
+                channels = secret.connect_slack('user_id_vocab'),
+                initial_comment = 'Baroque Music: ',
+                filename = f'{mp3_files[random.randint(0,len(mp3_files)-1)]}',
+                file = f"C:\\NotionUpdate\\progress\\vocab_learning_algorithm\\mp3_files\\{mp3_files[random.randint(0,len(mp3_files)-1)] + '.mp3'}")
 
 
 
@@ -703,12 +725,13 @@ class LearnVocab():
             sent to Slack app. (The result can be seen on the Github page)
     
         """
-
+        # Send Baroque Study Music
+        self.send_slackMP3()
         
         message_full = ""
         message = ''
         line = '****************************************\n'
-
+        
         for c, vocab in enumerate(self.vocab_dic.keys()):
             all_def = self.vocab_dic[vocab][0]['definitions']
             all_ex = self.vocab_dic[vocab][0]['examples']

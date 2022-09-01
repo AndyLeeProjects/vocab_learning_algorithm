@@ -280,3 +280,4 @@ class ConnectNotionDB:
         df = pd.DataFrame(self.clean_data())
         df['Index'] = range(0, len(df))
         return df
+
