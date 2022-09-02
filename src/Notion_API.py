@@ -49,13 +49,14 @@ retrieve_data:
 
 
 class ConnectNotionDB:
-    def __init__(self, database_id, token_key, filters = None):
+    def __init__(self, database_id:str, token_key:str, filters:dict = None):
         """
         Initial Setup
 
         Args:
             database_id (str): database id can be found in the database url
             token_key (str): token key can be found in Notion page (Under Inspect).
+            filters (dict): filters used when calling Notion API
         """
         self.database_id = database_id
         self.token_key = token_key
@@ -244,7 +245,7 @@ class ConnectNotionDB:
             pass
 
 
-    def printProgressBar(iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    def printProgressBar(self, iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
         """
         Call in a loop to create terminal progress bar
 
@@ -280,4 +281,3 @@ class ConnectNotionDB:
         df = pd.DataFrame(self.clean_data())
         df['Index'] = range(0, len(df))
         return df
-
