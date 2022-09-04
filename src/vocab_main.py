@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jan 18 06:42:07 2022
-
-@author: Andy
-"""
 
 from email import message
 import requests, json
@@ -13,12 +8,9 @@ import random
 from datetime import date, datetime, timezone, timedelta
 import sys, os, io
 import slack
-sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding = 'utf-8') # modify encoding 
-sys.stderr = io.TextIOWrapper(sys.stderr.detach(), encoding = 'utf-8')
+from src.Notion_API import ConnectNotionDB as CN
+from src.Notion_update import update_Notion
 
-sys.path.append('C:\\NotionUpdate\\progress\\vocab_learning_algorithm\\src')
-from Notion_API import ConnectNotionDB as CN
-sys.path.append('C:\\NotionUpdate\\progress\\vocab_learning_algorithm')
 from secret import secret
 
 
@@ -107,37 +99,23 @@ class LearnVocab():
 
         # Get data from Notion_API.py
 
-        filters_unmemorized = {
-                "filter": {
-                    "property": "Status",
-                    "select": {
-                        "does_not_equal": "Memorized"
-                    }
-                }
-            }
+        filters_unmemorized = {"property": "Status",
+                               "select":{"does_not_equal": "Memorized"}   
+                                }
 
-        filters_memorized = {
-            "filter": {
-                "and": [
-                    {
-                        "property": "Status",
-                        "select": {
-                            "equals": "Wait List"
-                        }
-                    },
-                    {
-                        "property": "Confidence Level (Num)",
-                        "number": {
-                            "equals": 5
-                        }
-                    }
-                ]
-            }
-        }
+        filters_memorized = {"and": [
+                                        {"property": "Status",
+                                        "select": {"equals": "Wait List"}
+                                        },
+                                        {"property": "Confidence Level (Num)",
+                                        "number": {"equals": 5}
+                                        }
+                                    ]
+                            }
 
         # Get working vocab_data 
         Notion = CN(database_id, token_key, filters_unmemorized)
-        self.vocab_data = Notion.retrieve_data()        
+        self.vocab_data = Notion.retrieve_data()
 
         # Get memorized data to update their settings
         try:
@@ -163,32 +141,6 @@ class LearnVocab():
             "Content-Type": "application/json",
             "Notion-Version": "2021-05-13"
         }
-        
-    def update_Status(self, pageId: str, status: str):
-        """
-        update_Status: With the given pageId, which corresponds to a specific record (vocabulary),
-        it updates the status of the vocabulary: "Waitlist", "Next", "Memorized"
-            - After selecting a new list of vocabularies, their status will be updated using this method. 
-
-        Args:
-            pageId (str): pageId of each record
-        """
-        update_url = f"https://api.notion.com/v1/pages/{pageId}"
-
-        update_status_json = {
-            "properties": {
-                "Status": {
-                    "select":
-                        {
-                            "name": status
-                        }
-                }
-            }
-        }
-
-        response = requests.request("PATCH", update_url,
-                                    headers=self.headers, data=json.dumps(update_status_json))
-
 
     def update_count(self, cur_count: int, pageId: str):
         """
@@ -265,7 +217,9 @@ class LearnVocab():
         # Fill in the missing cells (Count and Status) using their pageIds
         for m in range(len(missing_records_entry)):
             self.update_count(-1, missing_records_entry[m])
-            self.update_Status(missing_records_entry[m], "Wait List")
+            
+            # Update Notion DB -> Change the status to "Wait List"
+            update_Notion("Status", {"select":{"name": "Wait List"}}, missing_records_entry[m], self.headers)
             
             # find its index
             modified_ind = self.vocab_data[self.vocab_data['pageId'] == missing_records_entry[m]]['Index']
@@ -279,8 +233,8 @@ class LearnVocab():
         if isinstance(self.vocab_data_memorized, list) == False:
             missing_records_memorized = self.vocab_data_memorized['pageId']
             for m in range(len(missing_records_memorized)):
-                self.update_Status(missing_records_memorized[m], "Memorized")
-
+                # Update Notion DB -> Change the status to "Memorized"
+                update_Notion("Status", {"select":{"name": "Memorized"}}, missing_records_memorized[m], self.headers)
 
 
     def adjust_suggestionRate(self):
@@ -350,7 +304,7 @@ class LearnVocab():
             next_index (list): the index of the vocabularies 
         """
         # Get high priority vocabularies
-        Cnotion.find_prioritySource()
+        self.find_prioritySource()
         
         # Store vocabs according to their priority
         high_ind = [] # High  
@@ -599,14 +553,16 @@ class LearnVocab():
             
             # Send the learned vocabs back to waitlist
             try:
-                self.update_Status(next_pageId[i], "Wait List")
+                # Update Notion DB -> Change the status to "Wait List"
+                update_Notion("Status", {"select":{"name": "Wait List"}}, next_pageId[i], self.headers)
                 self.update_count(next_count[i], next_pageId[i])
             except:
                 pass
 
             # Update new selected vocabs
             try:
-                self.update_Status(new_selection_pageId[i], "Next")
+                # Update Notion DB -> Change the status to "Next"
+                update_Notion("Status", {"select":{"name": "Next"}}, new_selection_pageId[i], self.headers)
             except:
                 pass
 
@@ -714,7 +670,7 @@ class LearnVocab():
                 channels = secret.connect_slack('user_id_vocab'),
                 initial_comment = 'Baroque Music: ',
                 filename = f'{mp3_files[random.randint(0,len(mp3_files)-1)]}',
-                file = f"C:\\NotionUpdate\\progress\\vocab_learning_algorithm\\mp3_files\\{mp3_files[random.randint(0,len(mp3_files)-1)] + '.mp3'}")
+                file = f"./mp3_files/{mp3_files[random.randint(0,len(mp3_files)-1)] + '.mp3'}")
 
 
 
@@ -805,9 +761,9 @@ class LearnVocab():
         print()
         self.fill_emptyCells()
         self.adjust_suggestionRate()
-        self.execute_update()
-        self.connect_LinguaAPI()
-        self.send_SlackMessage()
+        #self.execute_update()
+        #self.connect_LinguaAPI()
+        #self.send_SlackMessage()
 
 
 # Suggest Vocabs 
