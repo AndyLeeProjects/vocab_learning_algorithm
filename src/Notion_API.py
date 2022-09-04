@@ -61,13 +61,8 @@ class ConnectNotionDB:
             "Content-Type": "application/json",
             "Authorization": "Bearer " + self.token_key
         }
-        print(filters)
         if filters != None:
-            self.filters = {
-                "filter": {
-                    filters
-                }
-            }
+            self.filters = {"filter": filters}
         else:
             self.filters = None
 

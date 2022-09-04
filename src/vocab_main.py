@@ -24,16 +24,6 @@ __init__:
         4. Set up total exposures & a total number of suggestions.
 
 
-update_*:
-- The methods that begin with 'update_' utilizes PATCH HTTP method to update Notion Database. 
-- The following are the purposes for each method.
-    1. update_status(): Updates the vocabulary's status to "Wait List", "Next", "Memorized".
-    2. update_count(): Updates the exposure (count) of the vocabulary after the suggestion via Slack.
-    3. update_toConsciousness(): When the number of exposures (count) reaches 7, 
-                                    updates the vocab to Consciousness database.
-    4. update_mySQL(): Updates memorized vocabularies into MySQL database.
-
-
 adjust_suggestionRate():
     As the vocabularies in the waitlist increase & decrease in size, this method controls the 
         a number of vocabulary inflow & outflow to prevent congestions. 
@@ -69,20 +59,6 @@ execute_update():
 
 connect_LinguaAPI():
     Retrieves vocabulary definition, sentence examples, synonyms, and contexts.
-
-
-send_SlackImg():
-    Sends jpg files associated with the vocabulary by using the img url provided by the user on Notion database.
-
-
-send_slackMP3()
-    Baroque is known to be good for improving memory while studying. Thus, by randomly selecting mp3 files
-    it sends it for every slack notification. Also, mp3 files have 3 ~ 5 mins of short duration.
-
-
-send_SlackMessage():
-    Using the information retrieved from LinguaAPI, a string format message is generated. Then 
-    using the Slack API, the message is sent at scheduled times.
 
 """
 
@@ -142,46 +118,6 @@ class LearnVocab():
             "Notion-Version": "2021-05-13"
         }
 
-    def update_count(self, cur_count: int, pageId: str):
-        """
-        update_count: For every vocab exposure, its count increments by 1
-
-        Args:
-            cur_count (int): current count for the vocab
-            pageId (str): pageId of each record
-        """
-        update_url = f"https://api.notion.com/v1/pages/{pageId}"
-        update_count = {
-            "properties": {
-                "Count": {
-                    "number": cur_count + 1
-                }
-            }}
-
-        response = requests.request("PATCH", update_url,
-                                    headers=self.headers, data=json.dumps(update_count))
-
-
-    def update_toConsciousness(self, pageId: str):
-        """
-        update_toConsciousness: When the exposure count reaches 7, transfer the record to "memorized" database 
-        in Notion(or MySQL).
-
-        Args:
-            pageId (str): pageId of each record
-        """
-        # After reaching 7 exposures, the vocabulary will moved to other DB, called "conscious"
-        update_url = f"https://api.notion.com/v1/pages/{pageId}"
-        update_conscious = {
-            "properties": {
-                "Conscious": {
-                    "checkbox": True
-                }
-            }}
-
-        response = requests.request("PATCH", update_url,
-                                    headers=self.headers, data=json.dumps(update_conscious))
-
     
     def update_MySQL(self):
         """Find the Vocabularies that have the following attributes:
@@ -216,7 +152,8 @@ class LearnVocab():
         
         # Fill in the missing cells (Count and Status) using their pageIds
         for m in range(len(missing_records_entry)):
-            self.update_count(-1, missing_records_entry[m])
+            update_Notion("Count", {"number": 0}, missing_records_entry[m], self.headers)
+            
             
             # Update Notion DB -> Change the status to "Wait List"
             update_Notion("Status", {"select":{"name": "Wait List"}}, missing_records_entry[m], self.headers)
@@ -555,7 +492,7 @@ class LearnVocab():
             try:
                 # Update Notion DB -> Change the status to "Wait List"
                 update_Notion("Status", {"select":{"name": "Wait List"}}, next_pageId[i], self.headers)
-                self.update_count(next_count[i], next_pageId[i])
+                update_Notion("Count", {"number": next_count[i] + 1}, next_pageId[i], self.headers)
             except:
                 pass
 
@@ -569,8 +506,9 @@ class LearnVocab():
             # If the vocab count reaches assigned total_exposure, send it to a separate DB
             try:
                 if next_count[i] >= self.total_exposures - 1:
-                    self.update_toConsciousness(next_pageId[i])
-                self.update_count(next_count[i], next_pageId[i])
+                    update_Notion("Conscious", {"checkbox": True}, next_pageId[i], self.headers)
+                update_Notion("Status", {"select":{"name": "Next"}}, new_selection_pageId[i], self.headers)
+                update_Notion("Count", {"number": next_count[i] + 1}, next_pageId[i], self.headers)
             except:
                 pass
         
@@ -636,116 +574,6 @@ class LearnVocab():
                                                    'examples': examples,
                                                     'synonyms': synonyms})
 
-
-    # Send a Message using Slack API
-
-    def send_SlackImg(self, url:str, msg:str, filename:str):
-        """
-        send_SlackImg()
-            Sends images associated with the vocabulary with separate API call
-        """
-    
-        response = requests.get(url)
-        img = bytes(response.content) # convert image to binary
-
-        # Send the image
-        self.client.files_upload(
-                channels = secret.connect_slack('user_id_vocab'),
-                initial_comment = msg,
-                filename = filename,
-                content = img)
-    
-    def send_slackMP3(self):
-        """
-        send_slackMP3()
-            - Baroque is known to be good for improving memory while studying. Thus, by randomly selecting mp3 files
-              it sends it for every slack notification.
-            - mp3 files have 3 ~ 5 mins of short duration
-
-        """
-        mp3_files = ['concerto', 'sinfonia', 'vivaldi']
-
-        # Send the image
-        self.client.files_upload(
-                channels = secret.connect_slack('user_id_vocab'),
-                initial_comment = 'Baroque Music: ',
-                filename = f'{mp3_files[random.randint(0,len(mp3_files)-1)]}',
-                file = f"./mp3_files/{mp3_files[random.randint(0,len(mp3_files)-1)] + '.mp3'}")
-
-
-
-    def send_SlackMessage(self):
-        """
-        send_SlackMessage()
-            Organizes vocab data into a clean string format. Then, with Slack API, the string is 
-            sent to Slack app. (The result can be seen on the Github page)
-    
-        """
-        # Send Baroque Study Music
-        self.send_slackMP3()
-        
-        message_full = ""
-        message = ''
-        line = '****************************************\n'
-        
-        for c, vocab in enumerate(self.vocab_dic.keys()):
-            all_def = self.vocab_dic[vocab][0]['definitions']
-            all_ex = self.vocab_dic[vocab][0]['examples']
-            all_sy = self.vocab_dic[vocab][0]['synonyms']
-            message += line
-            message += 'Vocab %d: ' % (c+1) + vocab + '\n'
-            message += 'Source: ' + self.sources[c] + '\n'
-            message += line
-            
-            # Add Contexts of the vocabulary (provided in Notion database by the user)
-            if isinstance(self.contexts[c], str) == True:
-                message += 'Context: ' + str(self.contexts[c]) + '\n'
-            
-            try:
-                # Write Definitions
-                if all_def != np.nan and all_def != None:
-                    message += '\nDefinition: \n'
-                for definition in range(len(all_def)):
-                    message += '\t - ' + all_def[definition] + '\n'
-
-                # Write Synonyms
-                if all_sy != None:
-                    message += '\nSynonyms: ' + all_sy[0][0]
-                    for synonym in all_sy[1:]:
-                        message += ', ' + synonym[0]
-                    message += '\n'
-
-                # Write Examples
-                if all_ex != []:
-                    message += '\nExample: \n'
-
-                    for example in range(len(all_ex)):
-                        message += '\t - ' + \
-                            all_ex[0][example].strip('\n ') + '\n'
-
-            except:
-                pass
-
-            # If the vocabulary has associated image (provided in Notion), send a separate Slack message
-            if isinstance(self.imgURL[c], str) == True and 'http' in self.imgURL[c]:
-                self.send_SlackImg(self.imgURL[c], message, vocab)
-                message = '\n'
-
-            message_full += '\n\n' + message
-            message = ''
-
-        print(message_full)
-
-        data = {
-            'token': secret.connect_slack("token_key"),
-            'channel': secret.connect_slack("user_id_vocab"),    # User ID.
-            'as_user': True,
-            'text': message_full
-        }
-
-        requests.post(url='https://slack.com/api/chat.postMessage',
-                      data=data)
-        
     def run_All(self):
         """
         Runs all the code above. 
@@ -761,11 +589,12 @@ class LearnVocab():
         print()
         self.fill_emptyCells()
         self.adjust_suggestionRate()
-        #self.execute_update()
-        #self.connect_LinguaAPI()
-        #self.send_SlackMessage()
-
-
+        self.execute_update()
+        self.connect_LinguaAPI()
+        
+        from src.slack_Message import send_SlackMessage
+        send_SlackMessage(self.vocab_dic, self.imgURL, self.sources, self.contexts, self.client, 
+                        secret.connect_slack("user_id_vocab"), secret.connect_slack("token_key"))
 # Suggest Vocabs 
 database_id = secret.vocab('databaseId')
 token_key = secret.notion_API("token")
