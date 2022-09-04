@@ -8,9 +8,11 @@ import random
 from datetime import date, datetime, timezone, timedelta
 import sys, os, io
 import slack
+
+# Direct to specified path to use the modules below
+os.chdir(os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
 from src.Notion_API import ConnectNotionDB as CN
 from src.Notion_update import update_Notion
-
 from secret import secret
 
 
