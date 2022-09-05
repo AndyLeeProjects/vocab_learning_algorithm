@@ -2,3 +2,4 @@
 .DS_Store
 db.json
 secret/
+__pycache__
