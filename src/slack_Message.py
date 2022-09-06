@@ -19,9 +19,9 @@ send_SlackMessage():
 
 """
 
-def send_SlackImg(url:str, msg:str, filename:str, client, user_id):
+def send_slack_img(url:str, msg:str, filename:str, client, user_id):
     """
-    send_SlackImg()
+    send_slack_img()
         Sends images associated with the vocabulary with separate API call
     """
 
@@ -35,9 +35,9 @@ def send_SlackImg(url:str, msg:str, filename:str, client, user_id):
             filename = filename,
             content = img)
 
-def send_slackMP3(client, user_id):
+def send_slack_mp3(client, user_id):
     """
-    send_slackMP3()
+    send_slack_mp3()
         - Baroque is known to be good for improving memory while studying. Thus, by randomly selecting mp3 files
             it sends it for every slack notification.
         - mp3 files have 3 ~ 5 mins of short duration
@@ -54,7 +54,7 @@ def send_slackMP3(client, user_id):
 
 
 
-def send_SlackMessage(vocab_dic:dict, imgURL:list, sources:list, contexts:list, client, user_id:str, token_key:str):
+def send_slack_message(vocab_dic:dict, imgURL:list, sources:list, contexts:list, client, user_id:str, token_key:str):
     """    
     send_SlackMessage():
         Organizes vocab data into a clean string format. Then, with Slack API, the string is 
@@ -70,7 +70,7 @@ def send_SlackMessage(vocab_dic:dict, imgURL:list, sources:list, contexts:list, 
         token_key (str): slack token_key
     """
     # Send Baroque Study Music
-    send_slackMP3(client, user_id)
+    send_slack_mp3(client, user_id)
     
     message_full = ""
     message = ''
@@ -116,7 +116,7 @@ def send_SlackMessage(vocab_dic:dict, imgURL:list, sources:list, contexts:list, 
 
         # If the vocabulary has associated image (provided in Notion), send a separate Slack message
         if isinstance(imgURL[c], str) == True and 'http' in imgURL[c]:
-            send_SlackImg(imgURL[c], message, vocab, client, user_id)
+            send_slack_img(imgURL[c], message, vocab, client, user_id)
             message = '\n'
 
         message_full += '\n\n' + message

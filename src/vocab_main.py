@@ -59,7 +59,7 @@ execute_update():
     generated. Then by importing & utilizing the update_notion module, the database is updated accordingly.
 
 
-connect_lingua_API():
+connect_lingua_api():
     Retrieves vocabulary definition, sentence examples, synonyms, and contexts.
 
 """
@@ -518,9 +518,9 @@ class LearnVocab():
         self.contexts = next_context
         self.imgURL = next_imgURL
 
-    def connect_lingua_API(self):
+    def connect_lingua_api(self):
         """
-        connect_lingua_API()
+        connect_lingua_api()
             Using LinguaAPI, the definitions, examples, synonyms and contexts are gathered.
             Then they are stored into a dictionary format. 
 
@@ -590,10 +590,10 @@ class LearnVocab():
         self.fill_empty_cells()
         self.adjust_suggestion_rate()
         self.execute_update()
-        self.connect_lingua_API()
+        self.connect_lingua_api()
         
-        from slack_message import send_SlackMessage
-        send_SlackMessage(self.vocab_dic, self.imgURL, self.sources, self.contexts, self.client, 
+        from slack_message import send_slack_img
+        send_slack_img(self.vocab_dic, self.imgURL, self.sources, self.contexts, self.client, 
                        secret.connect_slack("user_id_vocab"), secret.connect_slack("token_key"))
 # Suggest Vocabs 
 database_id = secret.vocab('databaseId')
