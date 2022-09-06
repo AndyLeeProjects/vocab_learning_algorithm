@@ -11,8 +11,8 @@ import slack
 
 # Direct to specified path to use the modules below
 os.chdir(os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
-from src.Notion_API import ConnectNotionDB as CN
-from src.Notion_update import update_Notion
+from notion_api import ConnectNotionDB as CN
+from notion_update import update_notion
 from secret import secret
 
 
@@ -26,18 +26,18 @@ __init__:
         4. Set up total exposures & a total number of suggestions.
 
 
-adjust_suggestionRate():
+adjust_suggestion_rate():
     As the vocabularies in the waitlist increase & decrease in size, this method controls the 
         a number of vocabulary inflow & outflow to prevent congestions. 
 
 
-find_prioritySource():
+find_priority_source():
     Learning some vocabulary are urgent than others. Specified by the users, the vocabularies have an asterisk 
     sign for the 'more important' categories (ex: Job*, Data Science*, Biology*, etc.), and this method differentiates 
     the vocabularies that belong to such categories. 
 
 
-select_vocabSuggestions(): 
+select_vocab_suggestions(): 
     - 4 levels of Priority: High, High-Medium (New), Medium, and Low
         -> With each priority level, different conditions are applied and separately stored
     - This method selects vocabularies for slack notification considering the following conditions.
@@ -49,7 +49,7 @@ select_vocabSuggestions():
         5. suggest unique words (No redundancy within a suggestion)
 
 
-vocab_suggestionRatio():
+vocab_suggestion_ratio():
     As vocabularies are stored into different priority levels, unique ratios are each applied to corresponding groups. 
         - These ratios will be used to pick a specific number of vocabularies from each group.
 
@@ -59,7 +59,7 @@ execute_update():
     generated. Then by importing & utilizing the update_notion module, the database is updated accordingly.
 
 
-connect_LinguaAPI():
+connect_lingua_API():
     Retrieves vocabulary definition, sentence examples, synonyms, and contexts.
 
 """
@@ -121,7 +121,7 @@ class LearnVocab():
         }
 
     
-    def update_MySQL(self):
+    def update_mysql(self):
         """Find the Vocabularies that have the following attributes:
             - Conscious Checked: Indicates that the vocab has been memorized
             - Confidence Level == 5 (5/5 -> completely memorized): Indicates that I feel confident about the vocab and
@@ -146,7 +146,7 @@ class LearnVocab():
                 mastered_vocabs.append(v)
 
 
-    def fill_emptyCells(self):
+    def fill_empty_cells(self):
 
         # find rows with missing values
         missing_records_entry = [self.vocab_data['pageId'].iloc[i] for i in range(len(self.vocab_data))
@@ -154,11 +154,11 @@ class LearnVocab():
         
         # Fill in the missing cells (Count and Status) using their pageIds
         for m in range(len(missing_records_entry)):
-            update_Notion("Count", {"number": 0}, missing_records_entry[m], self.headers)
+            update_notion({"Count": {"number": 0}}, missing_records_entry[m], self.headers)
             
             
             # Update Notion DB -> Change the status to "Wait List"
-            update_Notion("Status", {"select":{"name": "Wait List"}}, missing_records_entry[m], self.headers)
+            update_notion({"Status": {"select":{"name": "Wait List"}}}, missing_records_entry[m], self.headers)
             
             # find its index
             modified_ind = self.vocab_data[self.vocab_data['pageId'] == missing_records_entry[m]]['Index']
@@ -173,10 +173,10 @@ class LearnVocab():
             missing_records_memorized = self.vocab_data_memorized['pageId']
             for m in range(len(missing_records_memorized)):
                 # Update Notion DB -> Change the status to "Memorized"
-                update_Notion("Status", {"select":{"name": "Memorized"}}, missing_records_memorized[m], self.headers)
+                update_notion({"Status": {"select":{"name": "Memorized"}}}, missing_records_memorized[m], self.headers)
 
 
-    def adjust_suggestionRate(self):
+    def adjust_suggestion_rate(self):
         """
         The purpose for this function is to find an appropriate rate for daily suggestions.
         This is to prevent congestion caused by too many vocabs on the waitlist and having
@@ -207,13 +207,13 @@ class LearnVocab():
         else:
             pass
 
-    def find_prioritySource(self):
+    def find_priority_source(self):
         """
         There are vocabularies that need to be memorized more urgently. (job-related or school-related)
         For such categories, I have marked their sources with Asterisk sign 
         at the end of the source name. (ex. "Data Science*", "Job Search*")
 
-        These prioritized sources will be used in select_vocabSuggestions
+        These prioritized sources will be used in select_vocab_suggestions
         where it will fill vocabs with these sources first. 
         """
 
@@ -227,9 +227,9 @@ class LearnVocab():
 
 
 
-    def select_vocabSuggestions(self, count_min, next_index):
+    def select_vocab_suggestions(self, count_min, next_index):
         """
-        select_vocabSuggestions: This method selects vocabulary for suggestions considering
+        select_vocab_suggestions: This method selects vocabulary for suggestions considering
         the following conditions.
             - include maximum of 3 vocabs with the lowest count (using count_min)
                 -> This is to relearn newly introduced vocabs within 24 hours (recommended study method)
@@ -243,7 +243,7 @@ class LearnVocab():
             next_index (list): the index of the vocabularies 
         """
         # Get high priority vocabularies
-        self.find_prioritySource()
+        self.find_priority_source()
         
         # Store vocabs according to their priority
         high_ind = [] # High  
@@ -336,7 +336,7 @@ class LearnVocab():
         self.priority_ind = {'high_ind':high_ind, 'new_ind':new_ind, 'medium_ind':medium_ind, 'low_ind':low_ind}
 
 
-    def vocab_suggestionRatio(self):
+    def vocab_suggestion_ratio(self):
         """
         Create vocab suggestion ratio for each priority category
             - High: .3
@@ -373,14 +373,14 @@ class LearnVocab():
         next_count = [self.vocab_data["Count"][i] for i in next_index
                       if self.vocab_data["Status"][i] == "Next"]
 
-        # Get the minimum count -> select_vocabSuggestions() for-loop starting point
+        # Get the minimum count -> select_vocab_suggestions() for-loop starting point
         count_min = min(self.vocab_data['Count'])
         
         # Get self.priority_ind
-        self.select_vocabSuggestions(count_min, next_index)
+        self.select_vocab_suggestions(count_min, next_index)
 
         # Get self.priority_ratio
-        self.vocab_suggestionRatio()
+        self.vocab_suggestion_ratio()
 
         # Randomly select vocabularies from each prioritized indexes considering their ratios and
         # store them in new_selection_index
@@ -493,24 +493,24 @@ class LearnVocab():
             # Send the learned vocabs back to waitlist
             try:
                 # Update Notion DB -> Change the status to "Wait List"
-                update_Notion("Status", {"select":{"name": "Wait List"}}, next_pageId[i], self.headers)
-                update_Notion("Count", {"number": next_count[i] + 1}, next_pageId[i], self.headers)
+                update_notion({"Status": {"select":{"name": "Wait List"}}}, next_pageId[i], self.headers)
+                update_notion({"Count": {"number": next_count[i] + 1}}, next_pageId[i], self.headers)
             except:
                 pass
 
             # Update new selected vocabs
             try:
                 # Update Notion DB -> Change the status to "Next"
-                update_Notion("Status", {"select":{"name": "Next"}}, new_selection_pageId[i], self.headers)
+                update_notion({"Status": {"select":{"name": "Next"}}}, new_selection_pageId[i], self.headers)
             except:
                 pass
 
             # If the vocab count reaches assigned total_exposure, send it to a separate DB
             try:
                 if next_count[i] >= self.total_exposures - 1:
-                    update_Notion("Conscious", {"checkbox": True}, next_pageId[i], self.headers)
-                update_Notion("Status", {"select":{"name": "Next"}}, new_selection_pageId[i], self.headers)
-                update_Notion("Count", {"number": next_count[i] + 1}, next_pageId[i], self.headers)
+                    update_notion({"Conscious": {"checkbox": True}}, next_pageId[i], self.headers)
+                update_notion({"Status": {"select":{"name": "Next"}}}, new_selection_pageId[i], self.headers)
+                update_notion({"Count": {"number": next_count[i] + 1}}, next_pageId[i], self.headers)
             except:
                 pass
         
@@ -520,9 +520,9 @@ class LearnVocab():
         self.contexts = next_context
         self.imgURL = next_imgURL
 
-    def connect_LinguaAPI(self):
+    def connect_lingua_API(self):
         """
-        connect_LinguaAPI()
+        connect_lingua_API()
             Using LinguaAPI, the definitions, examples, synonyms and contexts are gathered.
             Then they are stored into a dictionary format. 
 
@@ -576,7 +576,7 @@ class LearnVocab():
                                                    'examples': examples,
                                                     'synonyms': synonyms})
 
-    def run_All(self):
+    def execute_all(self):
         """
         Runs all the code above. 
             1. Adjusts suggestion rate
@@ -589,17 +589,17 @@ class LearnVocab():
         """
         print("Retrieving Data...")
         print()
-        self.fill_emptyCells()
-        self.adjust_suggestionRate()
+        self.fill_empty_cells()
+        self.adjust_suggestion_rate()
         self.execute_update()
-        self.connect_LinguaAPI()
+        self.connect_lingua_API()
         
-        from src.slack_Message import send_SlackMessage
+        from slack_message import send_SlackMessage
         send_SlackMessage(self.vocab_dic, self.imgURL, self.sources, self.contexts, self.client, 
                         secret.connect_slack("user_id_vocab"), secret.connect_slack("token_key"))
 # Suggest Vocabs 
 database_id = secret.vocab('databaseId')
 token_key = secret.notion_API("token")
 Cnotion = LearnVocab(database_id, token_key)
-Cnotion.run_All()
+Cnotion.execute_all()
 

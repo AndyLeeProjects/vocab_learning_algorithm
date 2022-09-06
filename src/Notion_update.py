@@ -18,7 +18,7 @@ Use cases of update_Notion:
 
 """
 
-def update_Notion(name: str, content, pageId: str, headers):
+def update_notion(content:json, pageId: str, headers):
     """
     update_Notion(): With the provided name & content, it updates values in the Notion database
 
@@ -34,10 +34,7 @@ def update_Notion(name: str, content, pageId: str, headers):
     """
     update_url = f"https://api.notion.com/v1/pages/{pageId}"
 
-    update_properties = {
-        "properties": {
-            name: content
-        }}
+    update_properties = {"properties": content}
 
     response = requests.request("PATCH", update_url,
                                 headers=headers, data=json.dumps(update_properties))
