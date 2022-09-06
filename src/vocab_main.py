@@ -7,7 +7,7 @@ import pandas as pd
 import random
 from datetime import date, datetime, timezone, timedelta
 import sys, os, io
-import slack
+from slack import WebClient
 
 # Direct to specified path to use the modules below
 os.chdir(os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
@@ -92,13 +92,13 @@ class LearnVocab():
                             }
 
         # Get working vocab_data 
-        Notion = CN(database_id, token_key, filters_unmemorized)
-        self.vocab_data = Notion.retrieve_data()
+        Notion_unmemorized = CN(database_id, token_key, filters_unmemorized)
+        self.vocab_data = Notion_unmemorized.retrieve_data()
 
         # Get memorized data to update their settings
         try:
-            Notion = CN(database_id, token_key, filters_memorized)
-            self.vocab_data_memorized = Notion.retrieve_data()
+            Notion_memorized = CN(database_id, token_key, filters_memorized)
+            self.vocab_data_memorized = Notion_memorized.retrieve_data()
         except:
             self.vocab_data_memorized = []
         
@@ -111,7 +111,7 @@ class LearnVocab():
         self.total_exposures = 7
 
         # Authenticate to the Slack API via the generated token
-        self.client = slack.WebClient(secret.connect_slack('token_key'))
+        self.client = WebClient(secret.connect_slack('token_key'))
         
         # Set Headers for Notion API
         self.headers = {
@@ -295,26 +295,28 @@ class LearnVocab():
 
                 # Condition 1: High Priority
                 ## Stores vocabularies in a separate variable: priority_vocabs
+                ### - vocabularies created yesterday or today (relearning within 24 hr)
                 ### - conscious unchecked (not fully memorized): only suggests vocabs that are yet to be learned
                 ### - last_edited date does not match today's date: prevents redundancy in a daily scope
                 ### - priority_unique: choose from the prioritized vocab category(source)
                 ### - not in next_index: prevents repeated suggestions
                 if today_date != last_edited and \
+                    date_created in [today_date, yesterday_date] and \
                     source_name in self.priority_unique and \
                     ind_cur not in next_index:
                     high_ind.append(self.vocab_data_concise['Index'].iloc[ind])
                     
                 # Condition 2: Medium - High Priority
-                ## Append recently created vocabularies 
-                ### Purpose: reviewing a recently learned information within 24 hours highly increases
-                ###          the chance of registering it to the long-term memory
-                elif date_created in [today_date, yesterday_date] and \
+                ## Same with Condition 1 except the 24hr strategy
+                elif today_date != last_edited and \
+                    source_name in self.priority_unique and \
                     ind_cur not in next_index:
                     new_ind.append(self.vocab_data_concise['Index'].iloc[ind])
 
                 # Condition 3: Medium Priority
-                ## Same with 'Condition 1' except prioritized categories
+                ## Same with 'Condition 1' except the prioritized categories
                 elif today_date != last_edited and \
+                    date_created in [today_date, yesterday_date] and \
                     ind_cur not in next_index:
                     medium_ind.append(self.vocab_data_concise['Index'].iloc[ind])
 
@@ -415,8 +417,6 @@ class LearnVocab():
             except ValueError:
                 pass
         
-        print("new_selection_index: ", new_selection_index, len(new_selection_index))
-        print("self.num_vocab_sug", self.num_vocab_sug)
         # If new_selection_index did not append enough vocabs, fill with low priority vocabs
         if len(new_selection_index) < self.num_vocab_sug:
             # Randomize low priority index & remove duplicates
@@ -430,8 +430,6 @@ class LearnVocab():
             leftovers = [l for l in leftovers if l not in new_selection_index]
             new_selection_index = new_selection_index + leftovers[:diff]
             
-
-
         # select a new vocab pageId with randomized index
         new_selection_pageId = [self.vocab_data['pageId'][i] for i in new_selection_index]
 
@@ -450,18 +448,18 @@ class LearnVocab():
             try:
                 # Append vocab info for the New Selection Vocabularies (New Next)
                 new_selection_vocab.append(
-                    self.vocab_data['Vocab'][new_selection_index[i]])
+                    self.vocab_data['Vocab'].iloc[new_selection_index[i]])
                 new_selection_source.append(
-                    self.vocab_data['Source'][new_selection_index[i]])
+                    self.vocab_data['Source'].iloc[new_selection_index[i]])
                 new_selection_count.append(
-                    self.vocab_data['Count'][new_selection_index[i]])
+                    self.vocab_data['Count'].iloc[new_selection_index[i]])
 
                 # Append vocab inf for the Next Vocabularies (Old Next)
-                next_vocabs.append(self.vocab_data['Vocab'][next_index[i]])
-                next_source.append(self.vocab_data['Source'][next_index[i]])
-                next_count.append(int(self.vocab_data['Count'][next_index[i]]))
-                next_context.append(self.vocab_data['Context'][next_index[i]])
-                next_imgURL.append(self.vocab_data['imgURL'][next_index[i]])
+                next_vocabs.append(self.vocab_data['Vocab'].iloc[next_index[i]])
+                next_source.append(self.vocab_data['Source'].iloc[next_index[i]])
+                next_count.append(int(self.vocab_data['Count'].iloc[next_index[i]]))
+                next_context.append(self.vocab_data['Context'].iloc[next_index[i]])
+                next_imgURL.append(self.vocab_data['imgURL'].iloc[next_index[i]])
             except:
                 pass
 
@@ -596,7 +594,7 @@ class LearnVocab():
         
         from slack_message import send_SlackMessage
         send_SlackMessage(self.vocab_dic, self.imgURL, self.sources, self.contexts, self.client, 
-                        secret.connect_slack("user_id_vocab"), secret.connect_slack("token_key"))
+                       secret.connect_slack("user_id_vocab"), secret.connect_slack("token_key"))
 # Suggest Vocabs 
 database_id = secret.vocab('databaseId')
 token_key = secret.notion_API("token")
