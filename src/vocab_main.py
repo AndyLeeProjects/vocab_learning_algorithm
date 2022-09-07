@@ -336,8 +336,11 @@ class LearnVocab():
             ind += 1
     
         self.priority_ind = {'high_ind':high_ind, 'new_ind':new_ind, 'medium_ind':medium_ind, 'low_ind':low_ind}
-
-
+        print("Priority Index: ", )
+        for k in self.priority_ind.keys():
+            print(k, len(self.priority_ind[k]))
+        print()
+        
     def vocab_suggestion_ratio(self):
         """
         Create vocab suggestion ratio for each priority category
