@@ -592,8 +592,8 @@ class LearnVocab():
         self.execute_update()
         self.connect_lingua_api()
         
-        from slack_message import send_slack_img
-        send_slack_img(self.vocab_dic, self.imgURL, self.sources, self.contexts, self.client, 
+        from slack_message import send_slack_message
+        send_slack_message(self.vocab_dic, self.imgURL, self.sources, self.contexts, self.client, 
                        secret.connect_slack("user_id_vocab"), secret.connect_slack("token_key"))
 # Suggest Vocabs 
 database_id = secret.vocab('databaseId')

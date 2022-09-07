@@ -4,16 +4,16 @@ import numpy as np
 import requests
 
 """
-send_SlackImg():
+send_slack_img():
     Sends jpg files associated with the vocabulary by using the img url provided by the user on Notion database.
 
 
-send_slackMP3()
+send_slack_mp3()
     Baroque is known to be good for improving memory while studying. Thus, by randomly selecting mp3 files
     it sends it for every slack notification. Also, mp3 files have 3 ~ 5 mins of short duration.
 
 
-send_SlackMessage():
+send_slack_message():
     Using the information retrieved from LinguaAPI, a string format message is generated. Then 
     using the Slack API, the message is sent at scheduled times.
 
@@ -56,7 +56,7 @@ def send_slack_mp3(client, user_id):
 
 def send_slack_message(vocab_dic:dict, imgURL:list, sources:list, contexts:list, client, user_id:str, token_key:str):
     """    
-    send_SlackMessage():
+    send_slack_message():
         Organizes vocab data into a clean string format. Then, with Slack API, the string is 
         sent to Slack app. (The result can be seen on the Github page)
 
