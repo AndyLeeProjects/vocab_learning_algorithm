@@ -196,8 +196,7 @@ class LearnVocab():
         tot_vocab_waitList = len(vocab_df[vocab_df['Conscious'] == False])
 
         # If the waitlist is over 100, adjust the suggestion rate
-        if tot_vocab_waitList > 100:
-            self.num_vocab_sug = round(tot_vocab_waitList / adj_suggest_rate)
+        self.num_vocab_sug = round(tot_vocab_waitList / adj_suggest_rate)
 
         # If the total number of vocabulary suggestion is less than 5, set it to 5. 
         if self.num_vocab_sug < 5:
@@ -434,7 +433,7 @@ class LearnVocab():
             new_selection_index = new_selection_index + leftovers[:diff]
             
         # select a new vocab pageId with randomized index
-        new_selection_pageId = [self.vocab_data['pageId'][i] for i in new_selection_index]
+        new_selection_pageId = [self.vocab_data['pageId'].iloc[i] for i in new_selection_index]
 
         # Store new & old vocabulary information for the Slack update
         new_selection_vocab = []
