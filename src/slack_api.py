@@ -186,7 +186,8 @@ class ConnectSlack:
             token_key (str): slack token_key
         """
         # Send Baroque Study Music
-        self.send_slack_mp3()
+        ## Currently, mp3 not working for mobile devices. 
+        # self.send_slack_mp3()
         
         message_full = ""
         message = ''
