@@ -240,7 +240,7 @@ class ConnectSlack:
         
         if user != None:
             message_full += '\n\n\n\n*************** *Input Manual* ***************\n* * symbol*:  [중요성 - 상]  High Priority (ex. new: symphony*)\n*No Symbol*:  [중요성 - 중]  Medium Priority (ex. new: symphony)\n*^ symbol*:  [중요성 - 하]  Low Priority (ex. new: symphony^)\n*+ symbol*:  [사진 추가]  Add automated Image (ex. new: symphony+,   new: symphony*+,   new: symphony+^)\n\n'
-            message_full += '*Example Input*: \nnew: symphony^+    *[Must include \"new\"]*\ncontext: orchestra symphony    *[Optional]*\nURL: <img address>    *[Optional]*\nPriority: High    *[Optional]*\n\n'
+            message_full += '*************** *Example Input* ***************\nnew: symphony^+    *[Must include \"new\"]*\ncontext: orchestra symphony    *[Optional]*\nURL: <img address>    *[Optional]*\nPriority: High    *[Optional]*\n\n'
             message_full += '*Write feedbacks* -> (ex. feedback: 이거 이상해요 고쳐주세요! Please fix this!)'
         print(message_full)
 
