@@ -5,7 +5,7 @@ import requests, json
 import numpy as np
 import pandas as pd
 import random
-from datetime import date, datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta, time as time_time
 import sys, os, io
 from slack import WebClient
 
@@ -124,8 +124,8 @@ class LearnVocab():
         self.total_exposures = 7
 
         # Authenticate to the Slack API via the generated token
-        client = WebClient(secret.connect_slack('token_key', user = user))
-        self.Slack = ConnectSlack(secret.connect_slack("token_key", user = user), secret.connect_slack("user_id_vocab", user = user), client)
+        client = WebClient(secret.connect_slack('token_key', user = user[0]))
+        self.Slack = ConnectSlack(secret.connect_slack("token_key", user = user[0]), secret.connect_slack("user_id_vocab", user = user[0]), client)
         
         # Set Headers for Notion API
         self.headers = {
@@ -575,23 +575,41 @@ class LearnVocab():
         self.vocab_dic = connect_lingua_api(self.vocabs)
         
         self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, self.user)
-        
-def users_execute(users):
-    for user in users:
-        if user == None:
-            print(f'**************** Host ****************\n')    
-        else:
-            print(f'**************** {user} ****************\n')
-        # Suggest Vocabs 
-        database_id = secret.vocab('database_id', user=user)
-        token_key = secret.notion_API("token")
-        Cnotion = LearnVocab(database_id, token_key, user=user)
-        Cnotion.execute_all()
-                    
-        
-users = [None, "Stella", "Suru", "Mike"]
 
-users_execute(users)
+class ExecuteCode:
+    def __init__(self, users):
+        self.users = users
+
+    def is_time_between(self, begin_time, end_time, check_time=None):
+            # If check time is not given, default to current UTC time
+            check_time = check_time or datetime.now().time()
+            if begin_time < end_time:
+                return check_time >= begin_time and check_time <= end_time
+            else: # crosses midnight
+                return check_time >= begin_time or check_time <= end_time
+
+    def users_execute(self):
+        for user in self.users:
+            if user[0] == None:
+                print(f'**************** Host ****************\n')    
+            else:
+                print(f'**************** {user[0]} ****************\n')
+            # Suggest Vocabs 
+            database_id = secret.vocab('database_id', user=user[0])
+            token_key = secret.notion_API("token")
+            if users[1] == "KR":    
+                # Do not execute overnight in Korea Timezone
+                if self.is_time_between(time_time(12,00),time_time(19,00)) == False:
+                    Cnotion = LearnVocab(database_id, token_key, user=user)
+                    Cnotion.execute_all()
+            else:
+                Cnotion = LearnVocab(database_id, token_key, user=user)
+                Cnotion.execute_all()
+        
+users = [(None, "US"), ("Stella", "US"), ("Suru", "KR"), ("Mike", "KR")]
+
+ExecuteCode = ExecuteCode(users)
+ExecuteCode.users_execute()
 
 
 
