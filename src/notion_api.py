@@ -7,7 +7,7 @@ import pandas as pd
 import json
 import time
 
-""" ConnectNotionDB 
+""" ConnectNotion 
 
 __init__: 
             Basic setup using database_id & token_key
@@ -43,7 +43,7 @@ retrieve_data:
 
 
 
-class ConnectNotionDB:
+class ConnectNotion:
     def __init__(self, database_id:str, token_key:str, filters:dict = None):
         """
         Initial Setup
@@ -177,7 +177,7 @@ class ConnectNotionDB:
         for key in self.data.keys():
             row_num = len(self.data[key])
             
-            self.data[key] = [ConnectNotionDB.extract_nested_elements(self.data, key, ind) 
+            self.data[key] = [ConnectNotion.extract_nested_elements(self.data, key, ind) 
                          for ind in range(row_num)]
             
         return self.data

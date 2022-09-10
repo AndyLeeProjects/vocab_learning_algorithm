@@ -17,8 +17,7 @@ Use cases of update_Notion:
 
 
 """
-
-def update_notion(content:json, pageId: str, headers):
+def notion_update(content:json, pageId: str, headers):
     """
     update_Notion(): With the provided name & content, it updates values in the Notion database
 
@@ -38,3 +37,37 @@ def update_notion(content:json, pageId: str, headers):
 
     response = requests.request("PATCH", update_url,
                                 headers=headers, data=json.dumps(update_properties))
+
+
+
+def notion_create(database_id:str, vocab:str, headers:dict, priority_status:str = None, context:str = None, img_url:str = None):
+    path = "https://api.notion.com/v1/pages"
+
+        # Case 1: Includes the link
+    newPageData = {
+        "parent": {"database_id": database_id},
+        "properties": {
+            "Vocab": {
+                "title":[
+                    {
+                        "type": "text",
+                        "text":{
+                            "content": vocab
+                        }
+                    }
+                ]
+            },
+            "Status": {"select": {"name": "Wait List"}},
+            "Count": {"number": 0}}
+    }
+
+    if context != None:
+        newPageData["properties"]["Context"] = {"rich_text": [{"type": "text","text": {"content": context}}]}
+    if img_url != None:
+        newPageData["properties"]["imgURL"] = {"files": [{"type": "external","name": "vocab_img","external": {"url": img_url}}]}
+    if priority_status != None:
+        newPageData["properties"]["Priority"] = {"select": {"name": priority_status}}
+
+    response = requests.post(path, json=newPageData, headers=headers)
+    print(response)
+    print()
