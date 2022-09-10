@@ -73,7 +73,6 @@ class ConnectSlack:
         for message in messages_new:
             # Find slack messages that has "new" in the first 10 characters and also
             # the added day is within 3 days
-            print(message)
             new_vocab = message.split('\n')[0].split(':')[1].strip(' ').lower()
             if new_vocab not in vocab_data['Vocab'].str.lower():
                 
@@ -176,7 +175,7 @@ class ConnectSlack:
         """    
         send_slack_message():
             Organizes vocab data into a clean string format. Then, with Slack API, the string is 
-            sent to Slack app. (The result can be seen on the Github page)
+            sent to Slack app. (The result can be seen on the GitHub page)
 
         Args:
             vocab_dic (dict): vocabulary data
@@ -229,9 +228,10 @@ class ConnectSlack:
 
             except:
                 pass
-
+            print(imgURL[c], message, vocab)
             # If the vocabulary has associated image (provided in Notion), send a separate Slack message
             if isinstance(imgURL[c], str) == True and 'http' in imgURL[c]:
+                print(imgURL[c], message, vocab)
                 self.send_slack_img(imgURL[c], message, vocab)
                 message = '\n'
 
@@ -239,8 +239,8 @@ class ConnectSlack:
             message = ''
         
         if user != None:
-            message_full += '\n\n\n\n*************** *Input Manual* ***************\n* * symbol*:  [중요성 - 상]  High Priority \n     (ex. new: symphony*)\n*No Symbol*:  [중요성 - 중]  Medium Priority \n     (ex. new: symphony)\n*^ symbol*:  [중요성 - 하]  Low Priority \n     (ex. new: symphony^)\n*+ symbol*:  [사진 추가]  Add automated Image \n     (ex. new: symphony+,   new: symphony*+,   new: symphony+^)\n\n'
-            message_full += '*************** *Example Input* ***************\nnew: symphony^+    *[Must include \"new\"]*\ncontext: orchestra symphony    *[Optional]*\nURL: <img address>    *[Optional]*\nPriority: High    *[Optional]*\n\n'
+            message_full += '\n\n\n\n************ *Input Manual* ************\n* * symbol*:  [중요성 - 상]  High Priority \n     (ex. new: symphony*)\n*No Symbol*:  [중요성 - 중]  Medium Priority \n     (ex. new: symphony)\n*^ symbol*:  [중요성 - 하]  Low Priority \n     (ex. new: symphony^)\n*+ symbol*:  [사진 추가]  Add automated Image \n     (ex. new: symphony+,   new: symphony*+,   new: symphony+^)\n\n'
+            message_full += '************ *Example Input* ************\nnew: symphony^+    *[Must include \"new\"]*\ncontext: orchestra symphony    *[Optional]*\nURL: <img address>    *[Optional]*\nPriority: High    *[Optional]*\n\n'
             message_full += '*Write feedbacks* -> (ex. feedback: 이거 이상해요 고쳐주세요! Please fix this!)'
         print(message_full)
 
@@ -253,5 +253,3 @@ class ConnectSlack:
 
         requests.post(url='https://slack.com/api/chat.postMessage',
                         data=data)
-
-    

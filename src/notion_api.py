@@ -2,10 +2,8 @@
 
 import requests
 import numpy as np
-from datetime import datetime
 import pandas as pd
 import json
-import time
 
 """ ConnectNotion 
 
@@ -42,7 +40,6 @@ retrieve_data:
 """
 
 
-
 class ConnectNotion:
     def __init__(self, database_id:str, token_key:str, filters:dict = None):
         """
@@ -61,6 +58,7 @@ class ConnectNotion:
             "Content-Type": "application/json",
             "Authorization": "Bearer " + self.token_key
         }
+
         if filters != None:
             self.filters = {"filter": filters}
         else:
@@ -176,7 +174,7 @@ class ConnectNotion:
         
         for key in self.data.keys():
             row_num = len(self.data[key])
-            
+
             self.data[key] = [ConnectNotion.extract_nested_elements(self.data, key, ind) 
                          for ind in range(row_num)]
             
@@ -207,7 +205,17 @@ class ConnectNotion:
             return nested_type
         except:
             pass
-
+        
+        try:
+            nested_type = data[key][ind][0]["name"]
+            # In the case for type external url
+            if data[key][ind][0]['type'] == 'external' and 'http' in data[key][ind][0]['external']['url']:
+                return data[key][ind][0]['external']['url']
+            else:
+                return nested_type
+        except:
+            pass
+        
         try:
             nested_type = data[key][ind][0]["text"]["content"]
             return nested_type
@@ -216,12 +224,6 @@ class ConnectNotion:
         
         try:
             nested_type = data[key][ind]["number"]
-            return nested_type
-        except:
-            pass
-        
-        try:
-            nested_type = data[key][ind][0]["name"]
             return nested_type
         except:
             pass
@@ -238,31 +240,25 @@ class ConnectNotion:
         except:
             pass
     
-    def retrieve_data(self, type:str = "dataframe"):
+    def retrieve_data(self, return_type:str = "dataframe"):
         """
         retrieve_data(): Retrieves data from the designated database in Notion by running all methods above.
 
         Args:
-            type (str): define in which format data is outputted 
+            return_type (str): define in which format data is outputted 
             - "dataframe"
             - "json"
 
         Returns:
             data in specified type(format) 
         """
-        """
-        
-
-        Returns:
-            pandas dataframe: Default return option
-        """
         
         jsn = self.query_databases()
         jsn_all = self.get_all_pages()
-        if type == "json":
+        if return_type == "json":
             return jsn_all
         titles = self.get_projects_titles()
-        if type == "dataframe":
+        if return_type == "dataframe":
             df = pd.DataFrame(self.clean_data())
             df["Index"] = range(0, len(df))
             return df

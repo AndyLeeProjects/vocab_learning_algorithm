@@ -89,6 +89,9 @@ class LearnVocab():
                                         },
                                         {"property": "Confidence Level (Num)",
                                         "number": {"equals": 5}
+                                        },
+                                        {"property": "Conscious",
+                                        "checkbox": {"equals": True}
                                         }
                                     ]
                             }
@@ -220,7 +223,6 @@ class LearnVocab():
             self.vocab_data['Count'].iloc[modified_ind] = 0.0
             self.vocab_data['Status'].iloc[modified_ind] = 'Wait List'
             self.vocab_data['Priority'].iloc[modified_ind] = 'Low'
-
 
         # Update the incorrectly inputted cells (Status) using their pageIds
         if isinstance(self.vocab_data_memorized, list) == False:
@@ -587,7 +589,7 @@ def users_execute(users):
         Cnotion.execute_all()
                     
         
-users = [None, "Stella"]
+users = [None, "Stella", "Suru", "Mike"]
 
 users_execute(users)
 
