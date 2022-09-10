@@ -320,38 +320,41 @@ class LearnVocab():
                 # Create shortcut for iterating index
                 ind_cur = vocab_data_concise['Index'].iloc[ind]
 
-
                 # Condition 1: High Priority
                 ## Stores vocabularies in a separate variable: priority_vocabs
-                ### - vocabularies created yesterday or today (relearning within 24 hr)
-                ### - conscious unchecked (not fully memorized): only suggests vocabs that are yet to be learned
-                ### - last_edited date does not match today's date: prevents redundancy in a daily scope
-                ### - choose from the prioritized vocab
+                ### - prevent redundancy (today_date != last_edited & ind_cur not in next_index)
+                ### - choose from High Priority Group
                 ### - not in next_index: prevents repeated suggestions
                 if today_date != last_edited and \
-                    date_created in [today_date, yesterday_date] and \
                     vocab_data_concise['Priority'].iloc[ind] == "High" and \
                     ind_cur not in next_index:
                     high_ind.append(vocab_data_concise['Index'].iloc[ind])
                     
                 # Condition 2: Medium - High Priority
-                ## Same with Condition 1 except the 24hr strategy
+                ## prevent redundancy (today_date != last_edited & ind_cur not in next_index)
+                ## vocabularies created yesterday or today (relearning within 24 hr)
+                ## choose from High and Medium Priority Group
                 elif today_date != last_edited and \
+                    date_created in [today_date, yesterday_date] and \
                     vocab_data_concise['Priority'].iloc[ind] in ["High", "Medium"] and \
                     ind_cur not in next_index:
                     new_ind.append(vocab_data_concise['Index'].iloc[ind])
 
                 # Condition 3: Medium Priority
-                ## Same with 'Condition 1' except the prioritized categories
+                ## prevent redundancy (today_date != last_edited & ind_cur not in next_index)
+                ## choose from Medium Priority Group
                 elif today_date != last_edited and \
-                    date_created in [today_date, yesterday_date] and \
+                    vocab_data_concise['Priority'].iloc[ind] == "Medium" and \
                     ind_cur not in next_index:
                     medium_ind.append(vocab_data_concise['Index'].iloc[ind])
 
                 # Condition 4: Low Priority
+                ## prevent redundancy (ind_cur not in next_index)
                 elif ind_cur not in next_index:
                     low_ind.append(vocab_data_concise['Index'].iloc[ind])
                 
+                # Condition 5: Leftovers
+                ## Only applied to newly added users with less than 10 vocabs in the DB
                 else:
                     leftover_ind.append(vocab_data_concise['Index'].iloc[ind])
                 
@@ -365,11 +368,14 @@ class LearnVocab():
                 vocab_count += 1
                 
             ind += 1
-    
+
+        # Store the sorted results in dict
         self.priority_ind = {'high_ind':high_ind, 'new_ind':new_ind, 'medium_ind':medium_ind, 'low_ind':low_ind}
         self.leftover_ind = leftover_ind
         for k in self.priority_ind.keys():
             print(k, len(self.priority_ind[k]))
+        print("leftovers: ", self.leftover_ind)
+        print()
         
     def vocab_suggestion_ratio(self):
         """
@@ -466,6 +472,8 @@ class LearnVocab():
         # When newly launched app, add as many vocabs as possible
         ## self.leftovers: includes redundant vocabs
         if len(new_selection_index) < 5:
+            # Randomize before selection
+            random.shuffle(self.leftover_ind)
             diff = len(self.leftover_ind) - len(new_selection_index)
             new_selection_index = new_selection_index + self.leftover_ind[:diff]
         
@@ -574,7 +582,7 @@ class LearnVocab():
         # Gather vocabulary info from Lingua Robots API
         self.vocab_dic = connect_lingua_api(self.vocabs)
         
-        self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, self.user)
+        #self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, self.user)
 
 class ExecuteCode:
     def __init__(self, users):
@@ -606,8 +614,7 @@ class ExecuteCode:
                 Cnotion = LearnVocab(database_id, token_key, user=user)
                 Cnotion.execute_all()
         
-users = [(None, "US"), ("Stella", "US"), ("Suru", "KR"), ("Mike", "KR")]
-users = [("Taylor", "US")]
+users = [(None, "US"), ("Stella", "US"), ("Suru", "KR"), ("Mike", "KR"), ("Taylor", "US")]
 ExecuteCode = ExecuteCode(users)
 ExecuteCode.users_execute()
 

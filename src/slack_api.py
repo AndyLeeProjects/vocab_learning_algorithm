@@ -238,13 +238,13 @@ class ConnectSlack:
         
         if user[0] != None and user[1] == "KR":
             message_full += '\n\n\n\n************* *메뉴얼* *************\n`* symbol`:  *[중요성 - 상]*\n     (예시: new: symphony*)\n`No symbol`:  *[중요성 - 중]*\n     (예시: new: symphony)\n`^ symbol`:  *[중요성 - 하]*\n     (예시: new: symphony^)\n`+ symbol`:  *[사진 자동 추가]*\n     (예시: new: symphony+,   new: symphony*+,   new: symphony+^)\n\n'
-            message_full += '************ *단어추가 예시* ************\n`new: symphony^+`    *[\"new\"로 시작]*\n`context: orchestra symphony`    *[선택]*\n`URL: <img address>`    *[선택]*\n`Priority: High`    *[선택]*\n\n'
-            message_full += '*Write feedbacks* -> (예시: feedback: 이거 이상해요 고쳐주세요~)\n\n'
+            message_full += '************ *단어추가 예시* ************\n`new: symphony*+`    *[\"new\"로 시작]*\n`context: orchestra symphony`    *[선택]*\n`URL: <img address>`    *[선택]*\n`Priority: High`    *[선택]*\n\n'
+            message_full += '*피드백 작성 방법* -> (예시: feedback: ~ 수정 부탁드려요.)\n\n'
             message_full += f'<{secret.vocab("db_url", user=user[0])}|*나의 노션 데이터베이스로 이동*>'
         
         elif user[0] != None and user[1] == "US":
             message_full += '\n\n\n\n************ *Input Manual* ************\n`* symbol`:  *[High Priority]* \n     (ex. new: symphony*)\n`No Symbol`:  *[Medium Priority]* \n     (ex. new: symphony)\n`^ symbol`:  *[Low Priority]* \n     (ex. new: symphony^)\n`+ symbol`:  *[Add automated Image]* \n     (ex. new: symphony+,   new: symphony*+,   new: symphony+^)\n\n'
-            message_full += '************ *Example Input* ************\n`new: symphony^+`    *[Must include \"new\"]*\n`context: orchestra symphony`    *[Optional]*\n`URL: <img address>`    *[Optional]*\n`Priority: High`    *[Optional]*\n\n'
+            message_full += '************ *Example Input* ************\n`new: symphony*+`    *[Must include \"new\"]*\n`context: orchestra symphony`    *[Optional]*\n`URL: <img address>`    *[Optional]*\n`Priority: High`    *[Optional]*\n\n'
             message_full += '*Write feedbacks* -> (ex. feedback: Please fix this issue!)\n\n'
             message_full += f'<{secret.vocab("db_url", user=user[0])}|*Go To My Notion Database*>'
         data = {
