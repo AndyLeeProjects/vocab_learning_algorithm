@@ -232,9 +232,8 @@ class ConnectSlack:
             # If the vocabulary has associated image (provided in Notion), send a separate Slack message
             if isinstance(imgURL[c], str) == True and 'http' in imgURL[c]:
                 self.send_slack_img(imgURL[c], message, vocab)
-                message = '\n'
-
-            message_full += '\n\n' + message
+            else:
+                message_full += '\n\n' + message
             message = ''
         
         if user[0] != None and user[1] == "KR":

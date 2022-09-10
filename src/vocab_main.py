@@ -597,7 +597,7 @@ class ExecuteCode:
             # Suggest Vocabs 
             database_id = secret.vocab('database_id', user=user[0])
             token_key = secret.notion_API("token")
-            if users[1] == "KR":    
+            if user[1] == "KR":    
                 # Do not execute overnight in Korea Timezone
                 if self.is_time_between(time_time(12,00),time_time(19,00)) == False:
                     Cnotion = LearnVocab(database_id, token_key, user=user)
@@ -607,7 +607,7 @@ class ExecuteCode:
                 Cnotion.execute_all()
         
 users = [(None, "US"), ("Stella", "US"), ("Suru", "KR"), ("Mike", "KR")]
-
+users = [("Taylor", "US")]
 ExecuteCode = ExecuteCode(users)
 ExecuteCode.users_execute()
 
