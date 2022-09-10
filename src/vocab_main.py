@@ -162,8 +162,11 @@ class LearnVocab():
             1. newly added vocabularies -> Add them to the Notion DB
             2. memorized vocabularies -> Move them to 'Memorized' DB
         """
-        new_vocabs_slack, memorized_vocabs_slack = self.Slack.get_new_vocabs_slack(self.vocab_data)
+        new_vocabs_slack, memorized_vocabs_slack, self.feedback_slack = self.Slack.get_new_vocabs_slack(self.vocab_data)
         
+        # If there is any feedback from the users, notify the host
+        if self.feedback_slack != []:
+            self.Slack.send_slack_feedback(self.feedback_slack)
         # Update newly added vocabularies via Slack 
         for vocab_element in new_vocabs_slack:
             # Find the missing keys
@@ -180,9 +183,7 @@ class LearnVocab():
             
         # Update memorized vocabularies
         for vocab_element in memorized_vocabs_slack:
-            print(vocab_element)
             pageId = list(self.vocab_data[self.vocab_data['Vocab'] == vocab_element]['pageId'])[0]
-            print(str(pageId))
             notion_update({"Conscious": {"checkbox": True}}, pageId, self.headers)
         
 
@@ -362,11 +363,8 @@ class LearnVocab():
     
         self.priority_ind = {'high_ind':high_ind, 'new_ind':new_ind, 'medium_ind':medium_ind, 'low_ind':low_ind}
         self.leftover_ind = leftover_ind
-        print("Priority Index: ", )
         for k in self.priority_ind.keys():
             print(k, len(self.priority_ind[k]))
-        print("self.leftover_ind: ", len(self.leftover_ind))
-        print()
         
     def vocab_suggestion_ratio(self):
         """
@@ -464,7 +462,6 @@ class LearnVocab():
         ## self.leftovers: includes redundant vocabs
         if len(new_selection_index) < 5:
             diff = len(self.leftover_ind) - len(new_selection_index)
-            print("*****", new_selection_index, self.leftover_ind, diff)
             new_selection_index = new_selection_index + self.leftover_ind[:diff]
         
         # select a new vocab pageId with randomized index
@@ -572,10 +569,14 @@ class LearnVocab():
         # Gather vocabulary info from Lingua Robots API
         self.vocab_dic = connect_lingua_api(self.vocabs)
         
-        self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts)
+        self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, self.user)
         
-def user_execute(users):
+def users_execute(users):
     for user in users:
+        if user == None:
+            print(f'**************** Host ****************n')    
+        else:
+            print(f'**************** {user} ****************n')
         # Suggest Vocabs 
         database_id = secret.vocab('database_id', user=user)
         token_key = secret.notion_API("token")
@@ -585,7 +586,7 @@ def user_execute(users):
         
 users = [None, "Stella", "Suru"]
 
-user_execute(users)
+users_execute(users)
 
 
 

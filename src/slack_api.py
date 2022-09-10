@@ -7,6 +7,7 @@ from slack import WebClient
 from datetime import datetime, date, timedelta
 from difflib import SequenceMatcher
 import time
+from secret import secret
 
 
 """
@@ -39,7 +40,13 @@ class ConnectSlack:
         ## Find newly added vocabs in the last 3 days
         today = datetime.today()
         three_days_ts = datetime.timestamp(today - timedelta(days = 3))
-
+        """
+        Get Feedback Message
+        """
+        feedback_slack = [message['text'].split('\n')[0] for i, message in enumerate(slack_data['messages'])
+                    if float(slack_data['messages'][i]['ts']) > three_days_ts and \
+                        "feedback" in message['text'][:10].lower()]
+        
         """
         Get Memorized Vocab from Slack 
         """
@@ -113,7 +120,7 @@ class ConnectSlack:
                             temp['Priority'] = 'Low'
                 new_vocabs_slack.append(temp)
                     
-        return new_vocabs_slack, memorized_vocabs_slack
+        return new_vocabs_slack, memorized_vocabs_slack, feedback_slack
 
 
 
@@ -149,10 +156,23 @@ class ConnectSlack:
                 initial_comment = 'Baroque Music: ',
                 filename = f'{mp3_files[random.randint(0,len(mp3_files)-1)]}',
                 file = f"./mp3_files/{mp3_files[random.randint(0,len(mp3_files)-1)] + '.mp3'}")
+        
+    
+    def send_slack_feedback(self, feedback:str = None):
+        if feedback != None:
+            data = {
+            'token': self.token_key,
+            'channel': secret.connect_slack("user_id_vocab"),  # Host User ID.
+            'as_user': True,
+            'text': f"************** Feedback **************\n{feedback}"
+            }
+
+            requests.post(url='https://slack.com/api/chat.postMessage',
+                            data=data)
 
 
 
-    def send_slack_message(self, vocab_dic:dict, imgURL:list, contexts:list):
+    def send_slack_message(self, vocab_dic:dict, imgURL:list, contexts:list, user:str = None):
         """    
         send_slack_message():
             Organizes vocab data into a clean string format. Then, with Slack API, the string is 
@@ -217,7 +237,11 @@ class ConnectSlack:
 
             message_full += '\n\n' + message
             message = ''
-
+        
+        if user != None:
+            message_full += '\n\n\n\n*************** *Input Manual* ***************\n* * symbol*:  [중요성 - 상]  High Priority (ex. new: symphony*)\n*No Symbol*:  [중요성 - 중]  Medium Priority (ex. new: symphony)\n*^ symbol*:  [중요성 - 하]  Low Priority (ex. new: symphony^)\n*+ symbol*:  [사진 추가]  Add automated Image (ex. new: symphony+,   new: symphony*+,   new: symphony+^)\n\n'
+            message_full += '*Example Input*: \nnew: symphony^+    *[Must include \"new\"]*\ncontext: orchestra symphony    *[Optional]*\nURL: <img address>    *[Optional]*\nPriority: High    *[Optional]*\n\n'
+            message_full += '*Write feedbacks* -> (ex. feedback: 이거 이상해요 고쳐주세요! Please fix this!)'
         print(message_full)
 
         data = {
