@@ -584,7 +584,7 @@ def users_execute(users):
         Cnotion.execute_all()
                     
         
-users = [None, "Stella", "Suru"]
+users = ["Suru"]
 
 users_execute(users)
 
