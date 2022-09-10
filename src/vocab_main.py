@@ -196,19 +196,22 @@ class LearnVocab():
         """
         # find rows with missing values
         missing_records_entry = [(self.vocab_data.index[i], self.vocab_data['pageId'].iloc[i]) for i in range(len(self.vocab_data))
-            if str(self.vocab_data['Count'].iloc[i]) == str(np.nan) or str(self.vocab_data['Status'].iloc[i]) == 'nan']
+            if str(self.vocab_data['Count'].iloc[i]) == str(np.nan) or str(self.vocab_data['Status'].iloc[i]) == 'nan' or \
+                str(self.vocab_data['Priority'].iloc[i]) == 'nan']
         
         # Fill in the missing cells (Count and Status) using their pageIds
         for m in range(len(missing_records_entry)):
             # Update Notion DB -> Fill the count with 0
-            notion_update({"Count": {"number": 0}}, missing_records_entry[m][1], self.headers)
+            if str(self.vocab_data['Count'].iloc[missing_records_entry[m][0]]) == str(np.nan):
+                notion_update({"Count": {"number": 0}}, missing_records_entry[m][1], self.headers)
             
             if str(self.vocab_data['Priority'].iloc[missing_records_entry[m][0]]) == str(np.nan):
                 # Update Notion DB -> Fill the Priority with "Low"
                 notion_update({"Priority": {"select":{"name": "Medium"}}}, missing_records_entry[m][1], self.headers)
             
             # Update Notion DB -> Change the status to "Wait List"
-            notion_update({"Status": {"select":{"name": "Wait List"}}}, missing_records_entry[m][1], self.headers)
+            if str(self.vocab_data['Status'].iloc[missing_records_entry[m][0]]) == str(np.nan):
+                notion_update({"Status": {"select":{"name": "Wait List"}}}, missing_records_entry[m][1], self.headers)
             
             # find its index
             modified_ind = self.vocab_data[self.vocab_data['pageId'] == missing_records_entry[m][1]]['Index']
@@ -574,9 +577,9 @@ class LearnVocab():
 def users_execute(users):
     for user in users:
         if user == None:
-            print(f'**************** Host ****************n')    
+            print(f'**************** Host ****************\n')    
         else:
-            print(f'**************** {user} ****************n')
+            print(f'**************** {user} ****************\n')
         # Suggest Vocabs 
         database_id = secret.vocab('database_id', user=user)
         token_key = secret.notion_API("token")
@@ -584,7 +587,7 @@ def users_execute(users):
         Cnotion.execute_all()
                     
         
-users = ["Suru"]
+users = [None, "Stella"]
 
 users_execute(users)
 
