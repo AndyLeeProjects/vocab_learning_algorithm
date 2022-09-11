@@ -614,7 +614,7 @@ class ExecuteCode:
                 Cnotion = LearnVocab(database_id, token_key, user=user)
                 Cnotion.execute_all()
         
-users = [(None, "US"), ("Stella", "US"), ("Suru", "KR"), ("Mike", "KR"), ("Taylor", "US")]
+users = [(None, "US"), ("Stella", "US"), ("Suru", "KR"), ("Mike", "KR"), ("Taylor", "US"), ("Song", "KR")]
 ExecuteCode = ExecuteCode(users)
 ExecuteCode.users_execute()
 
