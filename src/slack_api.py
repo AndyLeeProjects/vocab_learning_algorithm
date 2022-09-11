@@ -188,6 +188,8 @@ class ConnectSlack:
         # Send Baroque Study Music
         ## Currently, mp3 not working for mobile devices. 
         self.send_slack_mp3()
+
+        
         
         message_full = ""
         message = ''
@@ -198,33 +200,33 @@ class ConnectSlack:
             all_ex = vocab_dic[vocab][0]['examples']
             all_sy = vocab_dic[vocab][0]['synonyms']
             message += line
-            message += 'Vocab %d: ' % (c+1) + vocab + '\n'
+            message += '*Vocab %d: ' % (c+1) + vocab + '*\n'
             message += line
             
             # Add Contexts of the vocabulary (provided in Notion database by the user)
             if isinstance(contexts[c], str) == True:
-                message += 'Context: ' + str(contexts[c]) + '\n'
+                message += '*Context:* ' + str(contexts[c]) + '\n'
             
             try:
                 # Write Definitions
                 if all_def != np.nan and all_def != None:
-                    message += '\nDefinition: \n'
+                    message += '\n*Definition:* \n'
                 for definition in range(len(all_def)):
-                    message += '\t - ' + all_def[definition] + '\n'
+                    message += '\t • ' + all_def[definition] + '\n'
 
                 # Write Synonyms
                 if all_sy != None:
-                    message += '\nSynonyms: ' + all_sy[0][0]
+                    message += '\n*Synonyms:* ' + all_sy[0][0]
                     for synonym in all_sy[1:]:
                         message += ', ' + synonym[0]
                     message += '\n'
 
                 # Write Examples
                 if all_ex != []:
-                    message += '\nExample: \n'
+                    message += '\n*Example:* \n'
 
                     for example in range(len(all_ex)):
-                        message += '\t - ' + \
+                        message += '\t • ' + \
                             all_ex[0][example].strip('\n ') + '\n'
 
             except:
