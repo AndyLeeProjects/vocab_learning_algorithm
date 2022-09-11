@@ -24,8 +24,6 @@ Thus, I decided to test the hypothesis of the Psychology Professor and create an
 
 # Algorithm Development Procedure
 
-<br>  
-
 ### 1. Collect Vocabularies in [Notion database](https://andyhomepage.notion.site/Vocabularies-c97b642944854b44826d8a1ce73bc3da)
 
 This process takes less than 10 seconds to record.
