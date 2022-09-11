@@ -584,32 +584,63 @@ class LearnVocab():
         
         self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, self.user)
 
+
+
+
+
+
+
 class ExecuteCode:
-    def __init__(self, users):
+    def __init__(self, users:list):
+        """
+        __init__(): Instantiates the class with users parameter
+
+        Args:
+            users (list): list of tuples including user names & language preference
+        """
         self.users = users
 
     def is_time_between(self, begin_time, end_time, check_time=None):
-            # If check time is not given, default to current UTC time
-            check_time = check_time or datetime.now().time()
-            if begin_time < end_time:
-                return check_time >= begin_time and check_time <= end_time
-            else: # crosses midnight
-                return check_time >= begin_time or check_time <= end_time
+        """
+        is_time_between(): checks if the time is between begin_time & end_time
+
+        Args:
+            begin_time (time): start time
+            end_time (time): end time
+            check_time (time, optional): checking a designated time. Defaults to None.
+
+        Returns:
+            Bool: T/F on whether the given time is in the range
+        """
+        # If check time is not given, default to current UTC time
+        check_time = check_time or datetime.now().time()
+        if begin_time < end_time:
+            return check_time >= begin_time and check_time <= end_time
+        else: # crosses midnight
+            return check_time >= begin_time or check_time <= end_time
 
     def users_execute(self):
+        """
+        users_execute(): Execute above code for every user. 
+        """
         for user in self.users:
             if user[0] == None:
                 print(f'**************** Host ****************\n')    
             else:
                 print(f'**************** {user[0]} ****************\n')
+            
             # Suggest Vocabs 
             database_id = secret.vocab('database_id', user=user[0])
             token_key = secret.notion_API("token")
+            
+            # If the user is in the Korean Timezone, skip between 12pm and 7pm
             if user[1] == "KR":    
                 # Do not execute overnight in Korea Timezone
                 if self.is_time_between(time_time(12,00),time_time(19,00)) == False:
                     Cnotion = LearnVocab(database_id, token_key, user=user)
                     Cnotion.execute_all()
+                else:
+                    print("User Skipped [Korea TimeZone]\n")
             else:
                 Cnotion = LearnVocab(database_id, token_key, user=user)
                 Cnotion.execute_all()
