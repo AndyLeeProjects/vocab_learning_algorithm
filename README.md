@@ -1,4 +1,4 @@
-# Vocabulary Analysis
+# Vocabulary Learning Algorithm
 
 When I was younger, a Psychology Professor came up to me and said something that I remember to this day.
 He said, "To bring the information from the unconscious level to the level of consciousness, it takes seven exposures on average."
@@ -24,10 +24,6 @@ Thus, I decided to test the hypothesis of the Psychology Professor and create an
 
 # Algorithm Development Procedure
 
-The code was relatively simple, but the procedure needed a little contemplation.
-
-<br>  
-
 ### 1. Collect Vocabularies in [Notion database](https://andyhomepage.notion.site/Vocabularies-c97b642944854b44826d8a1ce73bc3da)
 
 This process takes less than 10 seconds to record.
@@ -46,7 +42,7 @@ Although there exists a PyDictionary module that allows direct retrieval of voca
 These are some of the **conditions & procedures** when suggesting vocabularies:
 - Sort the vocabularies with minimum counts(exposures) so that suggestions are not clustered
 - Eliminate redundant or consecutive suggestions
-- Prioritize the vocab category("Data Science", "Film", "Book", etc.) catered to the user's needs
+- Prioritize the vocab catered to the user's needs ("High", "Medium", "Low")
     - When learning vocabularies, sometimes there exist words that need to be learned more urgently than others. This feature takes care of that. 
 - Find **an appropriate number of vocabularies** to suggest
     - Depending on how many vocabs are on the waiting list, the number of suggestions will adjust accordingly
@@ -54,6 +50,21 @@ These are some of the **conditions & procedures** when suggesting vocabularies:
 - Suggest vocabularies a day divided into three sections: morning, afternoon, and night
 - Add the number of exposure by one every time each vocabulary is exposed
 - Update the above changes to the Notion Vocabulary database
+
+<br>
+
+<br>  
+
+# User Experience
+
+Since adding the vocabularies in the Notion database can be burdensome (especially using mobile devices), the users can **directly type in the slack message to add new words to their databases.** The algorithm will also supplement any missing information to function correctly. Also, with the simple manual, users can add images, prioritize their words, and add contexts to the vocabulary in simple steps. The following are some of the key features that amplify user experience.
+- **Visual Learning**: automatically add images associated with the vocabulary (scraped from google images)
+- **Auditory Learning**: provide Baroque music that is 3 ~ 5 minutes for the amplified learning experience.
+    - Since Baroque music travels 50 to 80 beats per minute, it stabilizes our mental state ([For More](https://news.stanford.edu/news/2007/august8/med-music-080807.html))
+- Type in vocabulary desired to learn in a Slack message, which will be automatically stored in the user's Notion database
+    - Estimated time for storing a vocabulary through Slack is between 3 seconds to 15 seconds, depending on the user and the input information
+- Modify the timing of the slack notifications according to the user's timezone
+- Provide a direct link to the user's tailored Notion database for easier access
 
 <br>  
 
