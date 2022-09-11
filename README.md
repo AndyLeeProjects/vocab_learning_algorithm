@@ -64,7 +64,13 @@ Since adding the vocabularies in the Notion database can be burdensome (especial
 - Type in vocabulary desired to learn in a Slack message, which will be automatically stored in the user's Notion database
     - Estimated time for storing a vocabulary through Slack is between 3 seconds to 15 seconds, depending on the user and the input information
 - Modify the timing of the slack notifications according to the user's timezone
+- Generate different manuals in Slack according to the user's primary language (Korean or English)
 - Provide a direct link to the user's tailored Notion database for easier access
+
+| | |
+|:-------------------------:|:-------------------------:|
+| **English Manual** | **Korean Manual** |
+| <img align="center" src="https://github.com/AndyLeeProjects/vocab_learning_algorithm/blob/main/img_files/Slack_manual_en.jpg" width="400" height="350" > | <img align="center" src="https://github.com/AndyLeeProjects/vocab_learning_algorithm/blob/main/img_files/Slack_manual_kr.jpg" width="400" height="350" >
 
 <br>  
 
@@ -78,4 +84,4 @@ https://user-images.githubusercontent.com/84836749/174498756-449be7fd-045f-4c55-
 
 ### Slack Notification Sample
 
-https://user-images.githubusercontent.com/84836749/174499047-42f974e1-66cf-4d82-95f5-bffb47a05482.MP4
+https://user-images.githubusercontent.com/84836749/189543874-004b028d-3ca3-4d03-8175-696224e0609c.MP4
