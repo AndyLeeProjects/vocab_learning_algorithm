@@ -605,8 +605,8 @@ class ExecuteCode:
         is_time_between(): checks if the time is between begin_time & end_time
 
         Args:
-            begin_time (time): start time
-            end_time (time): end time
+            begin_time (time): start time (ex. time(12,00))
+            end_time (time): end time (ex. time(19,40))
             check_time (time, optional): checking a designated time. Defaults to None.
 
         Returns:
