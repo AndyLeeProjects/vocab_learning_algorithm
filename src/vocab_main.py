@@ -582,7 +582,7 @@ class LearnVocab():
         # Gather vocabulary info from Lingua Robots API
         self.vocab_dic = connect_lingua_api(self.vocabs)
         
-        #self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, self.user)
+        self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, self.user)
 
 class ExecuteCode:
     def __init__(self, users):

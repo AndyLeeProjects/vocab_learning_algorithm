@@ -69,55 +69,55 @@ class ConnectSlack:
                     if float(slack_data['messages'][i]['ts']) > three_days_ts and \
                         "new" in message['text'][:10].lower() and \
                         message['text'].split('\n')[0].split(':')[1].strip(' *^+').lower() not in list(vocab_data['Vocab'].str.lower())]
-        
+        print(messages_new)
         for message in messages_new:
             # Find slack messages that has "new" in the first 10 characters and also
             # the added day is within 3 days
             new_vocab = message.split('\n')[0].split(':')[1].strip(' ').lower()
-            if new_vocab not in vocab_data['Vocab'].str.lower():
+            values = []
+            temp = {}
+            # Organize keys & values
+            for line in message.split('\n'):
                 
-                values = []
-                temp = {}
-                # Organize keys & values
-                for line in message.split('\n'):
-                    line_split = line.split(': ')
-                    key = line_split[0].strip(' ').lower()
-                    value = line_split[1].strip(' ')
+                # In case there is more than one ':' in a line:
+                line_split = line.split(':', 1)
+                key = line_split[0].strip('` ').lower()
+                value = line_split[1].strip('`<> ')
+                
+                if key == "new":
+                    # If there is an asterisk sign after the vocab, separate is a high priority vocab
+                    if '*' in value:
+                        temp['Priority'] = 'High'
+                        value = value.replace('*', '')
+                    elif '^' in value:
+                        temp['Priority'] = 'Low'
+                        value = value.replace('^', '')
+                    else:    
+                        temp['Priority'] = 'Medium'
+                        value = value
+                    if '+' in value:
+                        temp['Img_show'] = True
+                        value = value.replace('+', '')
+                    temp['Vocab'] = value
                     
-                    if key == "new":
-                        # If there is an asterisk sign after the vocab, separate is a high priority vocab
-                        if '*' in value:
-                            temp['Priority'] = 'High'
-                            value = value.replace('*', '')
-                        elif '^' in value:
-                            temp['Priority'] = 'Low'
-                            value = value.replace('^', '')
-                        else:    
-                            temp['Priority'] = 'Medium'
-                            value = value
-                        if '+' in value:
-                            temp['Img_show'] = True
-                            value = value.replace('+', '')
-                        temp['Vocab'] = value
-                        
-                    elif 'http' in value:
-                        try:
-                            temp['URL'] = value.split('|https')[0].strip('<>')
-                        except:
-                            temp['URL'] = value.strip('<>')
-                    
-                    # Compare the string similarity between 'context' and the input
-                    elif key in 'context' or SequenceMatcher(None, 'context',key).ratio() > .8:
-                        temp['Context'] = value
-                    
-                    elif key in 'priority' or SequenceMatcher(None, 'priority',key).ratio() > .8:
-                        if SequenceMatcher(None, 'high',value.lower()).ratio() > .8:
-                            temp['Priority'] = 'High'
-                        elif SequenceMatcher(None, 'medium',value.lower()).ratio() > .8:
-                            temp['Priority'] = 'Medium'
-                        elif SequenceMatcher(None, 'low',value.lower()).ratio() > .8:
-                            temp['Priority'] = 'Low'
-                new_vocabs_slack.append(temp)
+                elif 'http' in value:
+                    try:
+                        temp['URL'] = value.split('|https')[0].strip('<>')
+                    except:
+                        temp['URL'] = value.strip('<>')
+                
+                # Compare the string similarity between 'context' and the input
+                elif key in 'context' or SequenceMatcher(None, 'context',key).ratio() > .8:
+                    temp['Context'] = value
+                
+                elif key in 'priority' or SequenceMatcher(None, 'priority',key).ratio() > .8:
+                    if SequenceMatcher(None, 'high',value.lower()).ratio() > .8:
+                        temp['Priority'] = 'High'
+                    elif SequenceMatcher(None, 'medium',value.lower()).ratio() > .8:
+                        temp['Priority'] = 'Medium'
+                    elif SequenceMatcher(None, 'low',value.lower()).ratio() > .8:
+                        temp['Priority'] = 'Low'
+            new_vocabs_slack.append(temp)
                     
         return new_vocabs_slack, memorized_vocabs_slack, feedback_slack
 
@@ -187,7 +187,7 @@ class ConnectSlack:
         """
         # Send Baroque Study Music
         ## Currently, mp3 not working for mobile devices. 
-        # self.send_slack_mp3()
+        self.send_slack_mp3()
         
         message_full = ""
         message = ''
