@@ -508,6 +508,11 @@ class LearnVocab():
         print('new_selection_vocab: ', new_selection_vocab)
         print('next_vocabs: ', next_vocabs)
         print()
+        if next_vocabs == []:
+            self.Slack.send_slack_warnings(self.user)
+            self.check_empty = True
+        else:
+            self.check_empty = False
         # Update Notion
         # 1. Change next -> Waitlist
         # 2.Change Waitlist -> next
@@ -581,8 +586,8 @@ class LearnVocab():
         
         # Gather vocabulary info from Lingua Robots API
         self.vocab_dic = connect_lingua_api(self.vocabs)
-        
-        self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, self.user)
+        if self.check_empty == False:
+            self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, self.user)
 
 
 

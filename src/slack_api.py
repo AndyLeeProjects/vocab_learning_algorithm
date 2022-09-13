@@ -7,6 +7,7 @@ from slack import WebClient
 from datetime import datetime, date, timedelta
 from difflib import SequenceMatcher
 import time
+from googletrans import Translator
 from secret import secret
 
 
@@ -175,7 +176,7 @@ class ConnectSlack:
             'token': self.token_key,
             'channel': secret.connect_slack("user_id_vocab"),  # Host User ID.
             'as_user': True,
-            'text': f"************** Feedback **************\n{feedback}"
+            'text': f"\n\n************** Feedback **************\n{feedback}"
             }
 
             requests.post(url='https://slack.com/api/chat.postMessage',
@@ -200,7 +201,7 @@ class ConnectSlack:
         # Send Baroque Study Music
         ## Currently, mp3 not working for mobile devices. 
         self.send_slack_mp3()
-
+        translator = Translator()
         
         message_full = ""
         message = ''
@@ -223,13 +224,25 @@ class ConnectSlack:
                 if all_def != np.nan and all_def != None:
                     message += '\n*Definition:* \n'
                 for definition in range(len(all_def)):
-                    message += '\t • ' + all_def[definition] + '\n'
+                    if user[1] == "KR":
+                        message += '\t • ' + translator.translate(all_def[definition], src='en', dest='ko').text + '\n\n'
+                    else:
+                        message += '\t • ' + all_def[definition] + '\n'
 
                 # Write Synonyms
+                synonyms = []
                 if all_sy != None:
-                    message += '\n*Synonyms:* ' + all_sy[0][0]
+                    if user[1] == "KR":
+                        message += '\n*Synonyms:* ' + translator.translate(all_sy[0][0], src='en', dest='ko').text
+                    else:
+                        message += '\n*Synonyms:* ' + all_sy[0][0]
+                    synonyms.append(all_sy[0][0])
                     for synonym in all_sy[1:]:
-                        message += ', ' + synonym[0]
+                        if synonym[0] not in synonyms:
+                            if user[1] == "KR":
+                                message += ', ' + translator.translate(synonym[0], src='en', dest='ko').text
+                            else:
+                                message += ', ' + synonym[0]
                     message += '\n'
 
                 # Write Examples
@@ -237,8 +250,11 @@ class ConnectSlack:
                     message += '\n*Example:* \n'
 
                     for example in range(len(all_ex)):
-                        message += '\t • ' + \
-                            all_ex[0][example].strip('\n ') + '\n'
+                        if user[1] == "KR":
+                            message += '\t • ' + all_ex[0][example].strip('\n ') + '\n'
+                            message += '\t > ' + translator.translate(all_ex[0][example], src='en', dest='ko').text.strip('\n ') + '\n'
+                        else:
+                            message += '\t • ' + all_ex[0][example].strip('\n ') + '\n\n'
 
             except:
                 pass
@@ -249,6 +265,44 @@ class ConnectSlack:
                 message_full += '\n\n' + message
             message = ''
         
+        message_full = self.create_manual_lang(message_full, user)
+        
+        data = {
+            'token': self.token_key,
+            'channel': self.user_id,  # User ID.
+            'as_user': True,
+            'text': message_full
+        }
+
+        requests.post(url='https://slack.com/api/chat.postMessage',
+                        data=data)
+        
+    def send_slack_warnings(self, user:str = None):
+        """
+        send_slack_feedback(): Sends retrieved feedbacks to the host Slack main channel.
+
+        Args:
+            feedback (str, optional): feedback from a user. Defaults to None.
+        """
+        if user[1] == "KR":
+            text_message = "\n\n\n>************************************\n>*노션 데이터 베이스에 단어가 부족합니다.*\n>*단어를 추가해 주세요*\n>************************************"
+        else:
+            text_message = "\n\n\n>************************************\n>*There is not enough vocabularies in the Database.*\n>*Please add more vocabularies*\n>************************************"
+        
+        # Add Manual to the message 
+        text_message = self.create_manual_lang(text_message, user)    
+        
+        data = {
+        'token': self.token_key,
+        'channel': secret.connect_slack("user_id_vocab", user=user[0]),  # Host User ID.
+        'as_user': True,
+        'text': text_message
+        }
+
+        requests.post(url='https://slack.com/api/chat.postMessage',
+                        data=data)
+        
+    def create_manual_lang(self, message_full:str, user:str = None):
         # Korean user Manual
         if user[0] != None and user[1] == "KR":
             message_full += '\n\n\n\n************* *메뉴얼* *************\n`* symbol`:  *[중요성 - 상]*\n     (예시: new: symphony*)\n`No symbol`:  *[중요성 - 중]*\n     (예시: new: symphony)\n`^ symbol`:  *[중요성 - 하]*\n     (예시: new: symphony^)\n`+ symbol`:  *[사진 자동 추가]*\n     (예시: new: symphony+,   new: symphony*+,   new: symphony+^)\n\n'
@@ -262,12 +316,5 @@ class ConnectSlack:
             message_full += '************ *Example Input* ************\n`new: symphony*+`    *[Must include \"new\"]*\n`context: orchestra symphony`    *[Optional]*\n`URL: <img address>`    *[Optional]*\n`Priority: High`    *[Optional]*\n\n'
             message_full += '*Write feedbacks* -> (ex. feedback: Please fix this issue!)\n\n'
             message_full += f'<{secret.vocab("db_url", user=user[0])}|*Go To My Notion Database*>'
-        data = {
-            'token': self.token_key,
-            'channel': self.user_id,  # User ID.
-            'as_user': True,
-            'text': message_full
-        }
-
-        requests.post(url='https://slack.com/api/chat.postMessage',
-                        data=data)
+        
+        return message_full
