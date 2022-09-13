@@ -218,12 +218,13 @@ class ConnectSlack:
             # Add Contexts of the vocabulary (provided in Notion database by the user)
             if isinstance(contexts[c], str) == True:
                 message += '*Context:* ' + str(contexts[c]) + '\n'
-            
+
             try:
                 # Write Definitions
                 if all_def != np.nan and all_def != None:
                     message += '\n*Definition:* \n'
                 for definition in range(len(all_def)):
+                    
                     if user[1] == "KR":
                         message += '\t • ' + translator.translate(all_def[definition], src='en', dest='ko').text + '\n\n'
                     else:
@@ -252,7 +253,7 @@ class ConnectSlack:
                     for example in range(len(all_ex)):
                         if user[1] == "KR":
                             message += '\t • ' + all_ex[0][example].strip('\n ') + '\n'
-                            message += '\t > ' + translator.translate(all_ex[0][example], src='en', dest='ko').text.strip('\n ') + '\n'
+                            message += '\t > ' + translator.translate(all_ex[0][example], src='en', dest='ko').text.strip('\n ') + '\n\n'
                         else:
                             message += '\t • ' + all_ex[0][example].strip('\n ') + '\n\n'
 

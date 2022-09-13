@@ -651,6 +651,7 @@ class ExecuteCode:
                 Cnotion.execute_all()
         
 users = [(None, "US"), ("Stella", "US"), ("Suru", "KR"), ("Mike", "KR"), ("Taylor", "US"), ("Song", "KR")]
+users = [("Test", "KR")]
 ExecuteCode = ExecuteCode(users)
 ExecuteCode.users_execute()
 
