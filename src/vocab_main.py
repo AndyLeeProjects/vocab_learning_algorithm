@@ -639,7 +639,7 @@ class ExecuteCode:
             token_key = secret.notion_API("token")
             
             # If the user is in the Korean Timezone, skip between 12pm and 7pm
-            if user[1] == "KR":
+            if user[1] == "ko":
                 # Do not execute overnight in Korea Timezone
                 Cnotion = LearnVocab(database_id, token_key, user=user)
                 if self.is_time_between(time_time(12,00),time_time(19,00)) == False:
@@ -651,7 +651,10 @@ class ExecuteCode:
                 Cnotion = LearnVocab(database_id, token_key, user=user)
                 Cnotion.execute_all()
         
-users = [(None, "US"), ("Stella", "US"), ("Suru", "KR"), ("Mike", "KR"), ("Taylor", "US"), ("Song", "KR")]
+# ko: Korean
+# en: English
+# zh-cn: Chinese
+users = [(None, "en"), ("Stella", "en"), ("Suru", "ko"), ("Mike", "ko"), ("Taylor", "US"), ("Song", "ko")]
 ExecuteCode = ExecuteCode(users)
 ExecuteCode.users_execute()
 

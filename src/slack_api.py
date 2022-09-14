@@ -9,6 +9,7 @@ from difflib import SequenceMatcher
 import time
 from googletrans import Translator
 from secret import secret
+from spellchecker import SpellChecker
 
 
 """
@@ -61,7 +62,7 @@ class ConnectSlack:
                     if float(slack_data['messages'][i]['ts']) > three_days_ts and \
                         "memorized" in message['text'][:10].lower() and \
                         message['text'].split('\n')[0].split(':')[1].strip(' ').lower() in list(vocab_data['Vocab'].str.lower())]
-        
+
         
         """
         Get New Vocab from Slack
@@ -71,12 +72,25 @@ class ConnectSlack:
         ## get messages that starts with "new"
         ## get messages that are not currently included in the vocab Notion DB
         ### work with smaller data (ideally, length less than 10)
-                    
-        messages_new = [message['text'] for i, message in enumerate(slack_data['messages'])
-                    if float(slack_data['messages'][i]['ts']) > three_days_ts and \
-                        "new" in message['text'][:10].lower() and \
-                        message['text'].split('\n')[0].split(':')[1].strip(' *^+').lower() not in list(vocab_data['Vocab'].str.lower())]
-        print(messages_new)
+        spell = SpellChecker()    
+        messages_new = []
+        for i, message in enumerate(slack_data['messages']):
+            
+            # Proceed only when there is a trigger word "new:" and max 3 days old
+            if "new" in message['text'][:10].lower() and float(slack_data['messages'][i]['ts']) > three_days_ts:
+                
+                # Get just the vocab
+                vocab = message['text'].split('\n')[0].split(':')[1].strip(' *^+').lower()
+                
+                # Spell check (in case the vocab was added using spell check feature)
+                if spell.correction(vocab) != None:
+                    vocab = spell.correction(vocab)
+                
+                # Check if the vocab is already in the vocab_data
+                if vocab not in list(vocab_data['Vocab'].str.lower()):
+                                            
+                        messages_new.append(message['text'])
+            
         for message in messages_new:
             # Find slack messages that has "new" in the first 10 characters and also
             # the added day is within 3 days
@@ -105,6 +119,13 @@ class ConnectSlack:
                     if '+' in value:
                         temp['Img_show'] = True
                         value = value.replace('+', '')
+                    
+                    # Check their spellings
+                    if spell.correction(value) == None:
+                        pass
+                    else:
+                        value = spell.correction(value)
+                    
                     temp['Vocab'] = value
                     
                 elif 'http' in value:
@@ -225,23 +246,23 @@ class ConnectSlack:
                     message += '\n*Definition:* \n'
                 for definition in range(len(all_def)):
                     
-                    if user[1] == "KR":
-                        message += '\t • ' + translator.translate(all_def[definition], src='en', dest='ko').text + '\n\n'
+                    if user[1] != "en":
+                        message += '\t • ' + translator.translate(all_def[definition], src='en', dest=user[1]).text + '\n\n'
                     else:
                         message += '\t • ' + all_def[definition] + '\n'
 
                 # Write Synonyms
                 synonyms = []
                 if all_sy != None:
-                    if user[1] == "KR":
-                        message += '\n*Synonyms:* ' + translator.translate(all_sy[0][0], src='en', dest='ko').text
+                    if user[1] != "en":
+                        message += '\n*Synonyms:* ' + translator.translate(all_sy[0][0], src='en', dest=user[1]).text
                     else:
                         message += '\n*Synonyms:* ' + all_sy[0][0]
                     synonyms.append(all_sy[0][0])
                     for synonym in all_sy[1:]:
                         if synonym[0] not in synonyms:
-                            if user[1] == "KR":
-                                message += ', ' + translator.translate(synonym[0], src='en', dest='ko').text
+                            if user[1] != "en":
+                                message += ', ' + translator.translate(synonym[0], src='en', dest=user[1]).text
                             else:
                                 message += ', ' + synonym[0]
                     message += '\n'
@@ -251,9 +272,9 @@ class ConnectSlack:
                     message += '\n*Example:* \n'
 
                     for example in range(len(all_ex)):
-                        if user[1] == "KR":
+                        if user[1] != "en":
                             message += '\t • ' + all_ex[0][example].strip('\n ') + '\n'
-                            message += '\t > ' + translator.translate(all_ex[0][example], src='en', dest='ko').text.strip('\n ') + '\n\n'
+                            message += '\t > ' + translator.translate(all_ex[0][example], src='en', dest=user[1]).text.strip('\n ') + '\n\n'
                         else:
                             message += '\t • ' + all_ex[0][example].strip('\n ') + '\n\n'
 
@@ -285,7 +306,7 @@ class ConnectSlack:
         Args:
             feedback (str, optional): feedback from a user. Defaults to None.
         """
-        if user[1] == "KR":
+        if user[1] == "ko":
             text_message = "\n\n\n>************************************\n>*노션 데이터 베이스에 단어가 부족합니다.*\n>*단어를 추가해 주세요*\n>************************************"
         else:
             text_message = "\n\n\n>************************************\n>*There is not enough vocabularies in the Database.*\n>*Please add more vocabularies*\n>************************************"
@@ -305,7 +326,7 @@ class ConnectSlack:
         
     def create_manual_lang(self, message_full:str, user:str = None):
         # Korean user Manual
-        if user[0] != None and user[1] == "KR":
+        if user[0] != None and user[1] == "ko":
             message_full += '\n\n\n\n************* *메뉴얼* *************\n`* symbol`:  *[중요성 - 상]*\n     (예시: new: symphony*)\n`No symbol`:  *[중요성 - 중]*\n     (예시: new: symphony)\n`^ symbol`:  *[중요성 - 하]*\n     (예시: new: symphony^)\n`+ symbol`:  *[사진 자동 추가]*\n     (예시: new: symphony+,   new: symphony*+,   new: symphony+^)\n\n'
             message_full += '************ *단어추가 예시* ************\n`new: symphony*+`    *[\"new\"로 시작]*\n`context: orchestra symphony`    *[선택]*\n`URL: <img address>`    *[선택]*\n`Priority: High`    *[선택]*\n\n'
             message_full += '*피드백 작성 방법* -> (예시: feedback: ~ 수정 부탁드려요.)\n\n'
