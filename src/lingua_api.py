@@ -36,7 +36,7 @@ def connect_lingua_api(vocabs:list):
         response = requests.request("GET", url, headers=headers)
         data = json.loads(response.text)
         audio_url = None
-        
+
         # DEFINE vocab_info
         # try: Some vocabularies do not have definitions (ex: fugazi)
         try:
@@ -56,12 +56,15 @@ def connect_lingua_api(vocabs:list):
             definitions = definitions[:5]
             
             # GET AUDIO URLS
-            for i in range(len(data['entries'][0]['pronunciations'])):
-                try:
-                    audio_url = data['entries'][0]['pronunciations'][i]['audio']['url']
-                    break
-                except:
-                    pass
+            try:
+                for i in range(len(data['entries'][0]['pronunciations'])):
+                    try:
+                        audio_url = data['entries'][0]['pronunciations'][i]['audio']['url']
+                        break
+                    except:
+                        pass
+            except:
+                pass
 
             # GET SYNONYMS
             # try: If synonyms are not in Lingua Dictionary, output None

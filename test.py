@@ -1,3 +1,4 @@
+from sqlite3 import connect
 from googletrans import Translator
 from langdetect import detect
 
