@@ -165,7 +165,8 @@ class LearnVocab():
             1. newly added vocabularies -> Add them to the Notion DB
             2. memorized vocabularies -> Move them to 'Memorized' DB
         """
-        new_vocabs_slack, memorized_vocabs_slack, self.feedback_slack = self.Slack.get_new_vocabs_slack(self.vocab_data)
+        languages = ["ko", "zh-cn"]
+        new_vocabs_slack, memorized_vocabs_slack, self.feedback_slack = self.Slack.get_new_vocabs_slack(self.vocab_data, languages)
         
         # If there is any feedback from the users, notify the host
         if self.feedback_slack != []:
@@ -655,6 +656,7 @@ class ExecuteCode:
 # en: English
 # zh-cn: Chinese
 users = [(None, "en"), ("Stella", "en"), ("Suru", "ko"), ("Mike", "ko"), ("Taylor", "US"), ("Song", "ko")]
+users = [("Test", "en")]
 ExecuteCode = ExecuteCode(users)
 ExecuteCode.users_execute()
 

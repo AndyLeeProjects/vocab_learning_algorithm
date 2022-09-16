@@ -1,6 +1,8 @@
 
 from secret import secret
 import requests, json
+from googletrans import Translator
+from langdetect import detect
 
 def connect_lingua_api(vocabs:list):
     """
@@ -11,17 +13,30 @@ def connect_lingua_api(vocabs:list):
     """
     vocab_dic = {}
     for vocab in vocabs:
+        
+        # detect language
+        lang = detect(vocab)
+        
+        # If the vocab is not in English, translate it before getting the details
+        if lang != "en":
+            translator = Translator()
+            vocab_orig = vocab
+            vocab = translator.translate(vocab, src=lang, dest='en').text
+        else:
+            vocab_orig = None
+        
         url = "https://lingua-robot.p.rapidapi.com/language/v1/entries/en/" + \
             vocab.lower().strip(' ')
         headers = {
             "X-RapidAPI-Key": secret.lingua_API('API Key'),
             "X-RapidAPI-Host": "lingua-robot.p.rapidapi.com"
         }
-
+        
         # Request Data
         response = requests.request("GET", url, headers=headers)
         data = json.loads(response.text)
-
+        audio_url = None
+        
         # DEFINE vocab_info
         # try: Some vocabularies do not have definitions (ex: fugazi)
         try:
@@ -39,6 +54,14 @@ def connect_lingua_api(vocabs:list):
             definitions = [vocab_dat[j]['senses'][i]['definition']
                             for j in range(len(vocab_dat)) for i in range(len(vocab_dat[j]['senses']))]
             definitions = definitions[:5]
+            
+            # GET AUDIO URLS
+            for i in range(len(data['entries'][0]['pronunciations'])):
+                try:
+                    audio_url = data['entries'][0]['pronunciations'][i]['audio']['url']
+                    break
+                except:
+                    pass
 
             # GET SYNONYMS
             # try: If synonyms are not in Lingua Dictionary, output None
@@ -55,7 +78,10 @@ def connect_lingua_api(vocabs:list):
                             if 'usageExamples' in vocab_dat[j]['senses'][i].keys()]
             except:
                 examples = None
+        if vocab_orig != None:
+            vocab = vocab_orig
         vocab_dic.setdefault(vocab, []).append({'definitions': definitions,
                                                 'examples': examples,
-                                                'synonyms': synonyms})
+                                                'synonyms': synonyms,
+                                                'audio_url': audio_url})
     return vocab_dic

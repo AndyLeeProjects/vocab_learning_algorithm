@@ -1,4 +1,7 @@
 from urllib.request import Request, urlopen
+from langdetect import detect
+from googletrans import Translator
+
 
 def scrape_google_image(vocab:str):
     """
@@ -11,6 +14,14 @@ def scrape_google_image(vocab:str):
         str: image url
     """
     
+    # detect language
+    lang = detect(vocab)
+    
+    # If the vocab is not in English, translate it before getting the details
+    if lang != "en":
+        translator = Translator()
+        vocab = translator.translate(vocab, src=lang, dest='en').text
+        
     vocab = vocab.replace(' ', '+')
     
     req = Request(

@@ -10,6 +10,8 @@ import time
 from googletrans import Translator
 from secret import secret
 from spellchecker import SpellChecker
+import emoji
+from langdetect import detect
 
 
 """
@@ -40,7 +42,7 @@ class ConnectSlack:
         self.user_id = user_id
         self.client = client
         
-    def get_new_vocabs_slack(self, vocab_data):
+    def get_new_vocabs_slack(self, vocab_data:dict, languages:list):
         slack_data = self.client.conversations_history(channel=self.user_id)
         new_vocabs_slack = []
         
@@ -72,7 +74,7 @@ class ConnectSlack:
         ## get messages that starts with "new"
         ## get messages that are not currently included in the vocab Notion DB
         ### work with smaller data (ideally, length less than 10)
-        spell = SpellChecker()    
+        spell = SpellChecker()
         messages_new = []
         for i, message in enumerate(slack_data['messages']):
             
@@ -82,19 +84,28 @@ class ConnectSlack:
                 # Get just the vocab
                 vocab = message['text'].split('\n')[0].split(':')[1].strip(' *^+').lower()
                 
-                # Spell check (in case the vocab was added using spell check feature)
-                if spell.correction(vocab) != None:
-                    vocab = spell.correction(vocab)
+                # Detect language
+                lang = detect(vocab) 
                 
+                # If the language is in English, check spelling
+                if lang not in languages:
+
+                    # Spell check (in case the vocab was added using spell check feature)
+                    if spell.correction(vocab) != None:
+                        vocab = spell.correction(vocab)
+                    
                 # Check if the vocab is already in the vocab_data
                 if vocab not in list(vocab_data['Vocab'].str.lower()):
-                                            
                         messages_new.append(message['text'])
-            
+        
         for message in messages_new:
             # Find slack messages that has "new" in the first 10 characters and also
             # the added day is within 3 days
             new_vocab = message.split('\n')[0].split(':')[1].strip(' ').lower()
+            
+            # Check language
+            lang = detect(new_vocab) 
+            
             values = []
             temp = {}
             # Organize keys & values
@@ -121,7 +132,7 @@ class ConnectSlack:
                         value = value.replace('+', '')
                     
                     # Check their spellings
-                    if spell.correction(value) == None:
+                    if spell.correction(value) == None or lang in languages:
                         pass
                     else:
                         value = spell.correction(value)
@@ -167,7 +178,7 @@ class ConnectSlack:
                 filename = filename,
                 content = img)
 
-    def send_slack_mp3(self):
+    def send_slack_mp3(self, audio_url:str = None):
         """
         send_slack_mp3()
             - Baroque is known to be good for improving memory while studying. Thus, by randomly selecting mp3 files
@@ -177,12 +188,19 @@ class ConnectSlack:
         """
         mp3_files = ['concerto', 'sinfonia', 'vivaldi']
 
-        # Send the image
-        self.client.files_upload(
-                channels = self.user_id,
-                initial_comment = 'Baroque Music: ',
-                filename = f'{mp3_files[random.randint(0,len(mp3_files)-1)]}',
-                file = f"./mp3_files/{mp3_files[random.randint(0,len(mp3_files)-1)] + '.mp3'}")
+        if audio_url == None:
+            # Send the image
+            self.client.files_upload(
+                    channels = self.user_id,
+                    initial_comment = 'Baroque Music: ',
+                    filename = f'{mp3_files[random.randint(0,len(mp3_files)-1)]}',
+                    file = f"./mp3_files/{mp3_files[random.randint(0,len(mp3_files)-1)] + '.mp3'}")
+        else:
+            self.client.files_upload(
+                    channels = self.user_id,
+                    initial_comment = 'Pronunciation: ',
+                    filename = "Pronunciation",
+                    file = audio_url)
         
     
     def send_slack_feedback(self, feedback:str = None):
@@ -227,13 +245,17 @@ class ConnectSlack:
         message_full = ""
         message = ''
         line = '****************************************\n'
-        
+
         for c, vocab in enumerate(vocab_dic.keys()):
             all_def = vocab_dic[vocab][0]['definitions']
             all_ex = vocab_dic[vocab][0]['examples']
             all_sy = vocab_dic[vocab][0]['synonyms']
+            if vocab_dic[vocab][0]['audio_url'] != None:
+                audio_file = f"<{vocab_dic[vocab][0]['audio_url']}|{emoji.emojize(':speaker_high_volume:')}>\t"
+            else:
+                audio_file = ""
             message += line
-            message += '*Vocab %d: ' % (c+1) + vocab + '*\n'
+            message += audio_file +  '*Vocab %d: ' % (c+1) + vocab + '*\n'
             message += line
             
             # Add Contexts of the vocabulary (provided in Notion database by the user)
@@ -295,7 +317,7 @@ class ConnectSlack:
             'as_user': True,
             'text': message_full
         }
-
+        
         requests.post(url='https://slack.com/api/chat.postMessage',
                         data=data)
         
@@ -333,7 +355,7 @@ class ConnectSlack:
             message_full += f'<{secret.vocab("db_url", user=user[0])}|*나의 노션 데이터베이스로 이동*>'
         
         # US user Manual
-        elif user[0] != None and user[1] == "US":
+        elif user[0] != None and user[1] == "en":
             message_full += '\n\n\n\n************ *Input Manual* ************\n`* symbol`:  *[High Priority]* \n     (ex. new: symphony*)\n`No Symbol`:  *[Medium Priority]* \n     (ex. new: symphony)\n`^ symbol`:  *[Low Priority]* \n     (ex. new: symphony^)\n`+ symbol`:  *[Add automated Image]* \n     (ex. new: symphony+,   new: symphony*+,   new: symphony+^)\n\n'
             message_full += '************ *Example Input* ************\n`new: symphony*+`    *[Must include \"new\"]*\n`context: orchestra symphony`    *[Optional]*\n`URL: <img address>`    *[Optional]*\n`Priority: High`    *[Optional]*\n\n'
             message_full += '*Write feedbacks* -> (ex. feedback: Please fix this issue!)\n\n'
