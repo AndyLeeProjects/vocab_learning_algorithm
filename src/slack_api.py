@@ -21,10 +21,6 @@ get_new_vocabs_slack():
         -> (ex. new: vocabulary+*)
 
 
-send_slack_img():
-    Sends jpg files associated with the vocabulary by using the img url provided by the user on Notion database.
-
-
 send_slack_mp3()
     Baroque is known to be good for improving memory while studying. Thus, by randomly selecting mp3 files
     it sends it for every slack notification. Also, mp3 files have 3 ~ 5 mins of short duration.
@@ -82,6 +78,7 @@ class ConnectSlack:
             if "new" in message['text'][:10].lower() and float(slack_data['messages'][i]['ts']) > three_days_ts:
                 
                 # Get just the vocab
+                print(message['text'], )
                 vocab = message['text'].split('\n')[0].split(':')[1].strip(' *^+').lower()
                 
                 # Detect language
@@ -160,24 +157,6 @@ class ConnectSlack:
                     
         return new_vocabs_slack, memorized_vocabs_slack, feedback_slack
 
-
-
-    def send_slack_img(self, url:str, msg:str, filename:str):
-        """
-        send_slack_img()
-            Sends images associated with the vocabulary with separate API call
-        """
-
-        response = requests.get(url)
-        img = bytes(response.content) # convert image to binary
-
-        # Send the image
-        self.client.files_upload(
-                channels = self.user_id,
-                initial_comment = msg,
-                filename = filename,
-                content = img)
-
     def send_slack_mp3(self, audio_url:str = None):
         """
         send_slack_mp3()
@@ -245,18 +224,17 @@ class ConnectSlack:
         
         blocks = []
         divider = {"type": "divider"}
-        
+        empty_block = {"type": "section","text": {"type": "plain_text","text": "\n\n"}}
         
         message_full = ""
         message = ''
-        line = '****************************************\n'
 
         for c, vocab in enumerate(vocab_dic.keys()):
             header_block = {
                         "type": "header",
                         "text": {
                             "type": "plain_text",
-                            "text": vocab
+                            "text": "Vocab " + str(c) + ": " + vocab.capitalize()
                         }
                     }
 
@@ -264,12 +242,10 @@ class ConnectSlack:
             all_ex = vocab_dic[vocab][0]['examples']
             all_sy = vocab_dic[vocab][0]['synonyms']
             if vocab_dic[vocab][0]['audio_url'] != None:
-                audio_file = f"<{vocab_dic[vocab][0]['audio_url']}|{emoji.emojize(':speaker_high_volume:')}>\t"
+                audio_file = f"<{vocab_dic[vocab][0]['audio_url']}|{emoji.emojize('*Pronunciation* :speaker_high_volume:')}>\t"
             else:
-                audio_file = ""
-            message += line
-            message += audio_file +  '*Vocab %d: ' % (c+1) + vocab + '*\n'
-            message += line
+                audio_file = "\n"
+            message += audio_file +  "\n"
             
             # Add Contexts of the vocabulary (provided in Notion database by the user)
             if isinstance(contexts[c], str) == True:
@@ -315,36 +291,51 @@ class ConnectSlack:
 
             except:
                 pass
-            # If the vocabulary has associated image (provided in Notion), send a separate Slack message
+            
+            content_block = {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": message
+                            }
+                }
+            
+            # If the vocabulary has associated image (provided in Notion), create an image_block
             if isinstance(imgURL[c], str) == True and 'http' in imgURL[c]:
-                self.send_slack_img(imgURL[c], message, vocab)
+                image_block = {"type": "image",
+                                "title": {
+                                    "type": "plain_text",
+                                    "text": vocab + " image"
+                                },
+                                "image_url": imgURL[c],
+                                "alt_text": vocab
+                            }
             else:
-                content_block = {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": message
-                                }
-                    }
-                blocks.append(header_block)
-                blocks.append(divider)
-                blocks.append(content_block)
                 message_full += '\n\n' + message
+                image_block = None
+            
+            # Append all blocks in the corresponding order
+            blocks.append(header_block)
+            blocks.append(divider)
+            blocks.append(content_block)
+            if image_block != None:
+                blocks.append(image_block)
+            blocks.append(empty_block)
+            blocks.append(empty_block)
             message = ''
         
-        message_full = self.create_manual_lang(message_full, user)
-        client.chat_postMessage(
+        manual = {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": self.create_manual_lang(message_full, user)
+                            }
+                }
+        blocks.append(manual)
+        self.client.chat_postMessage(
                 channel = secret.connect_slack("user_id_vocab", user = "Test"),
                 blocks = blocks)
-        data = {
-            'token': self.token_key,
-            'channel': self.user_id,  # User ID.
-            'as_user': True,
-            'text': message_full
-        }
-        
-        requests.post(url='https://slack.com/api/chat.postMessage',
-                        data=data)
+
         
     def send_slack_warnings(self, user:str = None):
         """

@@ -56,12 +56,15 @@ def connect_lingua_api(vocabs:list):
             definitions = definitions[:5]
             
             # GET AUDIO URLS
-            for i in range(len(data['entries'][0]['pronunciations'])):
-                try:
-                    audio_url = data['entries'][0]['pronunciations'][i]['audio']['url']
-                    break
-                except:
-                    pass
+            try:
+                for i in range(len(data['entries'][0]['pronunciations'])):
+                    try:
+                        audio_url = data['entries'][0]['pronunciations'][i]['audio']['url']
+                        break
+                    except:
+                        pass
+            except KeyError:
+                pass
 
             # GET SYNONYMS
             # try: If synonyms are not in Lingua Dictionary, output None

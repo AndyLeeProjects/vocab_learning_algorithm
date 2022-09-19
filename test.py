@@ -49,3 +49,15 @@ client.chat_postMessage(
                     }
             	]
 )
+
+
+test = [
+    {'type': 'header', 'text': {'type': 'plain_text', 'text': 'Shabby'}}, 
+    {'type': 'divider'}, 
+    {'type': 'section', 'text': {'type': 'mrkdwn', 'text': ''}}, 
+    {'type': 'header', 'text': {'type': 'plain_text', 'text': 'shake'}}, 
+    {'type': 'divider'}, 
+    {'type': 'section', 'text': {'type': 'mrkdwn', 'text': ''}}, 
+    {'type': 'header', 'text': {'type': 'plain_text', 'text': 'laughable'}}, 
+    {'type': 'divider'}, 
+    {'type': 'section', 'text': {'type': 'mrkdwn', 'text': ''}}]
