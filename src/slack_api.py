@@ -240,33 +240,34 @@ class ConnectSlack:
             all_ex = vocab_dic[vocab][0]['examples']
             all_sy = vocab_dic[vocab][0]['synonyms']
             if vocab_dic[vocab][0]['audio_url'] != None:
-                audio_file = f"<{vocab_dic[vocab][0]['audio_url']}|{emoji.emojize('*Pronunciation* :speaker_high_volume:')}>\n"
+                audio_file = f"<{vocab_dic[vocab][0]['audio_url']}|{emoji.emojize(':speaker_high_volume: *Pronunciation*')}>\n"
             else:
                 audio_file = "\n"
-            message += audio_file +  "\n"
+            message += audio_file + "\n"
             
             # Add Contexts of the vocabulary (provided in Notion database by the user)
             if isinstance(contexts[c], str) == True:
-                message += '*Context:* ' + str(contexts[c]) + '\n'
+                message += emoji.emojize('*Context:* ') + str(contexts[c]) + '\n'
 
             try:
                 # Write Definitions
                 if all_def != np.nan and all_def != None:
-                    message += '\n*Definition:* \n'
+                    message += emoji.emojize(':sparkles: *Definition:* \n')
                 for definition in range(len(all_def)):
                     
                     if user[1] != "en":
-                        message += '\t • ' + translator.translate(all_def[definition], src='en', dest=user[1]).text + '\n\n'
+                        message += '>• ' + translator.translate(all_def[definition], src='en', dest=user[1]).text + '\n'
                     else:
-                        message += '\t • ' + all_def[definition] + '\n'
+                        message += '>• ' + all_def[definition] + '\n'
+                message += '\n'
 
                 # Write Synonyms
                 synonyms = []
                 if all_sy != None:
                     if user[1] != "en":
-                        message += '\n*Synonyms:* ' + translator.translate(all_sy[0][0], src='en', dest=user[1]).text
+                        message += emoji.emojize(':sparkles: *Synonyms:* ') + translator.translate(all_sy[0][0], src='en', dest=user[1]).text
                     else:
-                        message += '\n*Synonyms:* ' + all_sy[0][0]
+                        message += emoji.emojize(':sparkles: *Synonyms:* ') + all_sy[0][0]
                     synonyms.append(all_sy[0][0])
                     for synonym in all_sy[1:]:
                         if synonym[0] not in synonyms:
@@ -274,18 +275,18 @@ class ConnectSlack:
                                 message += ', ' + translator.translate(synonym[0], src='en', dest=user[1]).text
                             else:
                                 message += ', ' + synonym[0]
-                    message += '\n'
+                    message += '\n\n'
 
                 # Write Examples
                 if all_ex != []:
-                    message += '\n*Example:* \n'
+                    message += emoji.emojize(':sparkles: *Example:* \n')
 
                     for example in range(len(all_ex)):
                         if user[1] != "en":
-                            message += '\t • ' + all_ex[0][example].strip('\n ') + '\n'
-                            message += '\t > ' + translator.translate(all_ex[0][example], src='en', dest=user[1]).text.strip('\n ') + '\n\n'
+                            message += '>• ' + all_ex[0][example].strip('\n ') + '\n'
+                            message += '> ' + translator.translate(all_ex[0][example], src='en', dest=user[1]).text.strip('\n ') + '\n>\n'
                         else:
-                            message += '\t • ' + all_ex[0][example].strip('\n ') + '\n\n'
+                            message += '>• ' + all_ex[0][example].strip('\n ') + '\n'
 
             except:
                 pass
@@ -319,6 +320,7 @@ class ConnectSlack:
                 blocks.append(image_block)
             blocks.append(empty_block)
             blocks.append(empty_block)
+            blocks.append(empty_block)
             message = ''
         
         manual = {
@@ -329,7 +331,15 @@ class ConnectSlack:
                             }
                 }
         blocks.append(manual)
+
+        # Set up notification message in Korean & English
+        if user[1] == "en":
+            notification_msg = user[0] + ", check out the new vocabularies!"
+        elif user[1] == "ko":
+            notification_msg = user[0] + "님, 새로운 단어들이 도착했어요!"
+
         self.client.chat_postMessage(
+                text = notification_msg,
                 channel = secret.connect_slack("user_id_vocab", user=user[0]),
                 blocks = blocks)
 
