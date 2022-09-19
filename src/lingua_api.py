@@ -4,7 +4,7 @@ import requests, json
 from googletrans import Translator
 from langdetect import detect
 
-def connect_lingua_api(vocabs:list):
+def connect_lingua_api(vocabs:list, languages:list) -> dict:
     """
     connect_lingua_api()
         Using LinguaAPI, the definitions, examples, synonyms and contexts are gathered.
@@ -18,7 +18,7 @@ def connect_lingua_api(vocabs:list):
         lang = detect(vocab)
         
         # If the vocab is not in English, translate it before getting the details
-        if lang != "en":
+        if lang in languages:
             translator = Translator()
             vocab_orig = vocab
             vocab = translator.translate(vocab, src=lang, dest='en').text

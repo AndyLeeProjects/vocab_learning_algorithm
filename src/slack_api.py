@@ -219,14 +219,12 @@ class ConnectSlack:
         ## Currently, mp3 not working for mobile devices. 
         #self.send_slack_mp3()
         translator = Translator()
-        
-        
-        
+
+        # Assign divider & empty block for the Slack Message        
         divider = {"type": "divider"}
         empty_block = {"type": "section","text": {"type": "plain_text","text": "\n\n"}}
-        blocks = [empty_block]
 
-        message_full = ""
+        blocks = [empty_block]
         message = ''
 
         for c, vocab in enumerate(vocab_dic.keys()):
@@ -311,7 +309,6 @@ class ConnectSlack:
                                 "alt_text": vocab
                             }
             else:
-                message_full += '\n\n' + message
                 image_block = None
             
             # Append all blocks in the corresponding order
@@ -328,7 +325,7 @@ class ConnectSlack:
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": self.create_manual_lang(message_full, user)
+                        "text": self.create_manual_lang(user)
                             }
                 }
         blocks.append(manual)
@@ -362,19 +359,21 @@ class ConnectSlack:
         requests.post(url='https://slack.com/api/chat.postMessage',
                         data=data)
         
-    def create_manual_lang(self, message_full:str, user:str = None):
+    def create_manual_lang(self, user:str = None) -> str:
+        manual = ""
+
         # Korean user Manual
         if user[0] != None and user[1] == "ko":
-            message_full += '\n\n\n\n************* *메뉴얼* *************\n`* symbol`:  *[중요성 - 상]*\n     (예시: new: symphony*)\n`No symbol`:  *[중요성 - 중]*\n     (예시: new: symphony)\n`^ symbol`:  *[중요성 - 하]*\n     (예시: new: symphony^)\n`+ symbol`:  *[사진 자동 추가]*\n     (예시: new: symphony+,   new: symphony*+,   new: symphony+^)\n\n'
-            message_full += '************ *단어추가 예시* ************\n`new: symphony*+`    *[\"new\"로 시작]*\n`context: orchestra symphony`    *[선택]*\n`URL: <img address>`    *[선택]*\n`Priority: High`    *[선택]*\n\n'
-            message_full += '*피드백 작성 방법* -> (예시: feedback: ~ 수정 부탁드려요.)\n\n'
-            message_full += f'<{secret.vocab("db_url", user=user[0])}|*나의 노션 데이터베이스로 이동*>'
+            manual += '\n\n\n\n************* *메뉴얼* *************\n`* symbol`:  *[중요성 - 상]*\n     (예시: new: symphony*)\n`No symbol`:  *[중요성 - 중]*\n     (예시: new: symphony)\n`^ symbol`:  *[중요성 - 하]*\n     (예시: new: symphony^)\n`+ symbol`:  *[사진 자동 추가]*\n     (예시: new: symphony+,   new: symphony*+,   new: symphony+^)\n\n'
+            manual += '************ *단어추가 예시* ************\n`new: symphony*+`    *[\"new\"로 시작]*\n`context: orchestra symphony`    *[선택]*\n`URL: <img address>`    *[선택]*\n`Priority: High`    *[선택]*\n\n'
+            manual += '*피드백 작성 방법* -> (예시: feedback: ~ 수정 부탁드려요.)\n\n'
+            manual += f'<{secret.vocab("db_url", user=user[0])}|*나의 노션 데이터베이스로 이동*>'
         
         # US user Manual
         elif user[0] != None and user[1] == "en":
-            message_full += '\n\n\n\n************ *Input Manual* ************\n`* symbol`:  *[High Priority]* \n     (ex. new: symphony*)\n`No Symbol`:  *[Medium Priority]* \n     (ex. new: symphony)\n`^ symbol`:  *[Low Priority]* \n     (ex. new: symphony^)\n`+ symbol`:  *[Add automated Image]* \n     (ex. new: symphony+,   new: symphony*+,   new: symphony+^)\n\n'
-            message_full += '************ *Example Input* ************\n`new: symphony*+`    *[Must include \"new\"]*\n`context: orchestra symphony`    *[Optional]*\n`URL: <img address>`    *[Optional]*\n`Priority: High`    *[Optional]*\n\n'
-            message_full += '*Write feedbacks* -> (ex. feedback: Please fix this issue!)\n\n'
-            message_full += f'<{secret.vocab("db_url", user=user[0])}|*Go To My Notion Database*>'
+            manual += '\n\n\n\n************ *Input Manual* ************\n`* symbol`:  *[High Priority]* \n     (ex. new: symphony*)\n`No Symbol`:  *[Medium Priority]* \n     (ex. new: symphony)\n`^ symbol`:  *[Low Priority]* \n     (ex. new: symphony^)\n`+ symbol`:  *[Add automated Image]* \n     (ex. new: symphony+,   new: symphony*+,   new: symphony+^)\n\n'
+            manual += '************ *Example Input* ************\n`new: symphony*+`    *[Must include \"new\"]*\n`context: orchestra symphony`    *[Optional]*\n`URL: <img address>`    *[Optional]*\n`Priority: High`    *[Optional]*\n\n'
+            manual += '*Write feedbacks* -> (ex. feedback: Please fix this issue!)\n\n'
+            manual += f'<{secret.vocab("db_url", user=user[0])}|*Go To My Notion Database*>'
         
-        return message_full
+        return manual

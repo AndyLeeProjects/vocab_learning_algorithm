@@ -164,13 +164,13 @@ class LearnVocab():
             1. newly added vocabularies -> Add them to the Notion DB
             2. memorized vocabularies -> Move them to 'Memorized' DB
         """
-        languages = ["ko", "zh-cn"]
-        new_vocabs_slack, memorized_vocabs_slack, self.feedback_slack = self.Slack.get_new_vocabs_slack(self.vocab_data, languages)
+        self.languages = ["ko", "zh-cn"]
+        new_vocabs_slack, memorized_vocabs_slack, self.feedback_slack = self.Slack.get_new_vocabs_slack(self.vocab_data, self.languages)
         
         # If there is any feedback from the users, notify the host
         if self.feedback_slack != []:
             self.Slack.send_slack_feedback(self.feedback_slack)
-        # Update newly added vocabularies via Slack 
+        # Update newly added vocabularies via Slack
         for vocab_element in new_vocabs_slack:
             # Find the missing keys
             missing_keys = [key for key in ["Vocab", "Context", "URL", "Priority", "Img_show"]
@@ -199,17 +199,24 @@ class LearnVocab():
         """
         # find rows with missing values
         missing_records_entry = [(self.vocab_data.index[i], self.vocab_data['pageId'].iloc[i]) for i in range(len(self.vocab_data))
-            if str(self.vocab_data['Count'].iloc[i]) == str(np.nan) or str(self.vocab_data['Status'].iloc[i]) == 'nan' or \
-                str(self.vocab_data['Priority'].iloc[i]) == 'nan']
+            if str(self.vocab_data['Count'].iloc[i]) == str(np.nan) or str(self.vocab_data['Status'].iloc[i]) == str(np.nan) or \
+                str(self.vocab_data['Priority'].iloc[i]) == str(np.nan) or str(self.vocab_data['imgURL'].iloc[i]) == str(np.nan)]
         
         # Fill in the missing cells (Count and Status) using their pageIds
         for m in range(len(missing_records_entry)):
+            
             # Update Notion DB -> Fill the count with 0
             if str(self.vocab_data['Count'].iloc[missing_records_entry[m][0]]) == str(np.nan):
                 notion_update({"Count": {"number": 0}}, missing_records_entry[m][1], self.headers)
+
+            # Update Notion DB -> Fill in image
+            if self.vocab_data['Img_show'].iloc[missing_records_entry[m][0]] == True and \
+                str(self.vocab_data['imgURL'].iloc[missing_records_entry[m][0]]) == str(np.nan):
+                img_url = scrape_google_image(self.vocab_data['Vocab'].iloc[missing_records_entry[m][0]])
+                notion_update({"imgURL": {"files": [{"type": "external","name": "vocab_img","external": {"url": img_url}}]}}, missing_records_entry[m][1], self.headers)
             
+            # Update Notion DB -> Fill the Priority with "Low"
             if str(self.vocab_data['Priority'].iloc[missing_records_entry[m][0]]) == str(np.nan):
-                # Update Notion DB -> Fill the Priority with "Low"
                 notion_update({"Priority": {"select":{"name": "Medium"}}}, missing_records_entry[m][1], self.headers)
             
             # Update Notion DB -> Change the status to "Wait List"
@@ -585,7 +592,7 @@ class LearnVocab():
         self.execute_update()
         
         # Gather vocabulary info from Lingua Robots API
-        self.vocab_dic = connect_lingua_api(self.vocabs)
+        self.vocab_dic = connect_lingua_api(self.vocabs, self.languages)
         if self.check_empty == False:
             self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, self.user)
 
@@ -655,6 +662,7 @@ class ExecuteCode:
 # en: English
 # zh-cn: Chinese
 users = [(None, "en"), ("Stella", "en"), ("Suru", "ko"), ("Mike", "ko"), ("Taylor", "US"), ("Song", "ko")]
+users = [("Test", "ko")]
 ExecuteCode = ExecuteCode(users)
 ExecuteCode.users_execute()
 
