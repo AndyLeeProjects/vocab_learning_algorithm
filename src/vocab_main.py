@@ -661,7 +661,7 @@ class ExecuteCode:
 # ko: Korean
 # en: English
 # zh-cn: Chinese
-users = [(None, "en"), ("Stella", "en"), ("Suru", "ko"), ("Mike", "ko"), ("Taylor", "US"), ("Song", "ko")]
+users = [(None, "en"), ("Stella", "en"), ("Suru", "ko"), ("Mike", "ko"), ("Taylor", "en"), ("Song", "ko")]
 ExecuteCode = ExecuteCode(users)
 ExecuteCode.users_execute()
 

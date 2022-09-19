@@ -1,4 +1,5 @@
 # Send a Message using Slack API
+from cgitb import text
 import random
 import numpy as np
 import requests
@@ -330,11 +331,17 @@ class ConnectSlack:
                         "text": self.create_manual_lang(user)
                             }
                 }
-        blocks.append(manual)
+        if user[0] != None:
+            blocks.append(manual)
 
         # Set up notification message in Korean & English
-        if user[1] == "en":
+        # Host
+        if user[0] == None:
+            notification_msg = "Andy" + ", check out the new vocabularies!"
+        # English users
+        elif user[1] == "en":
             notification_msg = user[0] + ", check out the new vocabularies!"
+        # Korean users
         elif user[1] == "ko":
             notification_msg = user[0] + "님, 새로운 단어들이 도착했어요!"
 
@@ -357,17 +364,22 @@ class ConnectSlack:
             text_message = "\n\n\n>************************************\n>*There is not enough vocabularies in the Database.*\n>*Please add more vocabularies*\n>************************************"
         
         # Add Manual to the message 
-        text_message = self.create_manual_lang(text_message, user)    
         
-        data = {
-        'token': self.token_key,
-        'channel': secret.connect_slack("user_id_vocab", user=user[0]),  # Host User ID.
-        'as_user': True,
-        'text': text_message
-        }
-
-        requests.post(url='https://slack.com/api/chat.postMessage',
-                        data=data)
+        if user[1] == "en":
+            notification_msg = "Please add more vocabularies"
+        elif user[1] == "ko":
+            notification_msg = "단어가 부족합니다. 단어를 추가해 주세요"
+        message_block = [{
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": text_message + self.create_manual_lang(user)
+                            }
+                }]
+        self.client.chat_postMessage(
+                text = notification_msg,
+                channel = secret.connect_slack("user_id_vocab", user=user[0]),
+                blocks = message_block)
         
     def create_manual_lang(self, user:str = None) -> str:
         manual = ""
