@@ -63,7 +63,7 @@ def connect_lingua_api(vocabs:list):
                         break
                     except:
                         pass
-            except:
+            except KeyError:
                 pass
 
             # GET SYNONYMS

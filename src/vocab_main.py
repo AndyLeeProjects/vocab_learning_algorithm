@@ -530,7 +530,7 @@ class LearnVocab():
         for i in range(max_iteration):
             try:
                 nv = next_vocabs[i]
-                print("Updating...\n")
+                print("Updating...")
                 print("Vocab: [", next_vocabs[i], "]\n")
             except:
                 pass
