@@ -333,7 +333,7 @@ class ConnectSlack:
                 }
         blocks.append(manual)
         self.client.chat_postMessage(
-                channel = secret.connect_slack("user_id_vocab", user = "Test"),
+                channel = secret.connect_slack("user_id_vocab", user=user[0]),
                 blocks = blocks)
 
         

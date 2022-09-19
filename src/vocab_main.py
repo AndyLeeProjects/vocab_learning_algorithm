@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from email import message
-import requests, json
 import numpy as np
 import pandas as pd
 import random
 from datetime import date, datetime, timezone, timedelta, time as time_time
-import sys, os, io
+import os
 from slack import WebClient
 
 # Direct to specified path to use the modules below
