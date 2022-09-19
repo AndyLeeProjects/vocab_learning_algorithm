@@ -108,5 +108,40 @@ try:
 except:
     examples = None
 lang = detect("undermine")
-vocab = translator.translate(vocab, src=lang, dest='en').text
-print(vocab)
+vocab = translator.translate(vocab, src=lang, dest='en')
+
+
+
+
+filters_unmemorized = {"property": "Status",
+                        "select":{"does_not_equal": "Memorized"}   
+                        }
+
+filters_memorized = {"and": [
+                                {"property": "Status",
+                                "select": {"equals": "Wait List"}
+                                },
+                                {"property": "Confidence Level (Num)",
+                                "number": {"equals": 5}
+                                },
+                                {"property": "Conscious",
+                                "checkbox": {"equals": True}
+                                }
+                            ]
+                    }
+
+# Redefine inputs
+database_id = secret.vocab('database_id')
+from src.notion_api import ConnectNotion
+# Get working vocab_data 
+try:
+    Notion_unmemorized = ConnectNotion(database_id, secret.vocab("token_key"), filters_unmemorized)
+    vocab_data = Notion_unmemorized.retrieve_data()
+except:
+    Notion_unmemorized = ConnectNotion(database_id, secret.vocab("token_key"))
+    vocab_data = Notion_unmemorized.retrieve_data()
+
+next_index = [vocab_data['Index'][i] for i in range(len(vocab_data['Vocab']))
+                      if vocab_data["Status"][i] == "Next"]
+print(len(vocab_data['Vocab']))
+print(next_index)

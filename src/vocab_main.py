@@ -208,6 +208,7 @@ class LearnVocab():
             # Update Notion DB -> Fill the count with 0
             if str(self.vocab_data['Count'].iloc[missing_records_entry[m][0]]) == str(np.nan):
                 notion_update({"Count": {"number": 0}}, missing_records_entry[m][1], self.headers)
+                self.vocab_data['Count'].iloc[modified_ind] = 0.0
 
             # Update Notion DB -> Fill in image
             if self.vocab_data['Img_show'].iloc[missing_records_entry[m][0]] == True and \
@@ -215,21 +216,19 @@ class LearnVocab():
                 img_url = scrape_google_image(self.vocab_data['Vocab'].iloc[missing_records_entry[m][0]])
                 notion_update({"imgURL": {"files": [{"type": "external","name": "vocab_img","external": {"url": img_url}}]}}, missing_records_entry[m][1], self.headers)
             
-            # Update Notion DB -> Fill the Priority with "Low"
+            # Update Notion DB -> Fill the Priority with "Medium"
             if str(self.vocab_data['Priority'].iloc[missing_records_entry[m][0]]) == str(np.nan):
+                self.vocab_data['Priority'].iloc[modified_ind] = 'Medium'
                 notion_update({"Priority": {"select":{"name": "Medium"}}}, missing_records_entry[m][1], self.headers)
             
             # Update Notion DB -> Change the status to "Wait List"
             if str(self.vocab_data['Status'].iloc[missing_records_entry[m][0]]) == str(np.nan):
                 notion_update({"Status": {"select":{"name": "Wait List"}}}, missing_records_entry[m][1], self.headers)
+                self.vocab_data['Status'].iloc[modified_ind] = 'Wait List'
             
             # find its index
             modified_ind = self.vocab_data[self.vocab_data['pageId'] == missing_records_entry[m][1]]['Index']
             
-            # Modify the vocab_data Data frame
-            self.vocab_data['Count'].iloc[modified_ind] = 0.0
-            self.vocab_data['Status'].iloc[modified_ind] = 'Wait List'
-            self.vocab_data['Priority'].iloc[modified_ind] = 'Low'
 
         # Update the incorrectly inputted cells (Status) using their pageIds
         if isinstance(self.vocab_data_memorized, list) == False:
@@ -379,10 +378,6 @@ class LearnVocab():
         # Store the sorted results in dict
         self.priority_ind = {'high_ind':high_ind, 'new_ind':new_ind, 'medium_ind':medium_ind, 'low_ind':low_ind}
         self.leftover_ind = leftover_ind
-        for k in self.priority_ind.keys():
-            print(k, len(self.priority_ind[k]))
-        print("leftovers: ", self.leftover_ind)
-        print()
         
     def vocab_suggestion_ratio(self):
         """
@@ -412,7 +407,7 @@ class LearnVocab():
         # indexes for 'next' vocabs or 'to be suggested' vocab
         next_index = [self.vocab_data['Index'][i] for i in range(len(self.vocab_data['Vocab']))
                       if self.vocab_data["Status"][i] == "Next"]
-
+        
         # pageIds for 'next' vocabs or 'to be suggested' vocab
         next_pageId = [self.vocab_data["pageId"][i] for i in next_index
                        if self.vocab_data["Status"][i] == "Next"]
@@ -662,6 +657,7 @@ class ExecuteCode:
 # en: English
 # zh-cn: Chinese
 users = [(None, "en"), ("Stella", "en"), ("Suru", "ko"), ("Mike", "ko"), ("Taylor", "en"), ("Song", "ko")]
+users = [(None, "en")]
 ExecuteCode = ExecuteCode(users)
 ExecuteCode.users_execute()
 

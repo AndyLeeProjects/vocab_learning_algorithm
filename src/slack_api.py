@@ -233,7 +233,7 @@ class ConnectSlack:
                         "type": "header",
                         "text": {
                             "type": "plain_text",
-                            "text": "Vocab " + str(c + 1) + ": " + vocab.capitalize()
+                            "text": str(c + 1) + ". " + vocab.capitalize()
                         }
                     }
 
