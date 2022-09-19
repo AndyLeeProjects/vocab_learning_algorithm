@@ -242,11 +242,24 @@ class ConnectSlack:
         self.send_slack_mp3()
         translator = Translator()
         
+        
+        blocks = []
+        divider = {"type": "divider"}
+        
+        
         message_full = ""
         message = ''
         line = '****************************************\n'
 
         for c, vocab in enumerate(vocab_dic.keys()):
+            header_block = {
+                        "type": "header",
+                        "text": {
+                            "type": "plain_text",
+                            "text": vocab
+                        }
+                    }
+
             all_def = vocab_dic[vocab][0]['definitions']
             all_ex = vocab_dic[vocab][0]['examples']
             all_sy = vocab_dic[vocab][0]['synonyms']
@@ -306,11 +319,23 @@ class ConnectSlack:
             if isinstance(imgURL[c], str) == True and 'http' in imgURL[c]:
                 self.send_slack_img(imgURL[c], message, vocab)
             else:
+                content_block = {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": message
+                                }
+                    }
+                blocks.append(header_block)
+                blocks.append(divider)
+                blocks.append(content_block)
                 message_full += '\n\n' + message
             message = ''
         
         message_full = self.create_manual_lang(message_full, user)
-        
+        client.chat_postMessage(
+                channel = secret.connect_slack("user_id_vocab", user = "Test"),
+                blocks = blocks)
         data = {
             'token': self.token_key,
             'channel': self.user_id,  # User ID.
