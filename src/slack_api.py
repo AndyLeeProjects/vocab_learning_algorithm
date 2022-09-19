@@ -248,7 +248,7 @@ class ConnectSlack:
             
             # Add Contexts of the vocabulary (provided in Notion database by the user)
             if isinstance(contexts[c], str) == True:
-                message += emoji.emojize('*Context:* ') + str(contexts[c]) + '\n'
+                message += emoji.emojize('*Context:* ') + str(contexts[c]) + '\n\n'
 
             try:
                 # Write Definitions
