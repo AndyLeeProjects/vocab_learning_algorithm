@@ -266,7 +266,7 @@ class ConnectSlack:
                             message += '>• ' + all_def[definition] + '\n'
                 else:
                     if user[1] != "en":
-                        message += '>• ' + all_def + '\n'
+                        message += '>• ' + all_def + ' *(구글 번역)*\n'
                     else:
                         pass
                 message += '\n'
