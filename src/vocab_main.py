@@ -106,7 +106,7 @@ class LearnVocab():
         except:
             Notion_unmemorized = ConnectNotion(database_id, token_key)
             self.vocab_data = Notion_unmemorized.retrieve_data()
-
+        
         # Get memorized data to update their settings
         try:
             Notion_memorized = ConnectNotion(database_id, token_key, filters_memorized)
@@ -310,7 +310,6 @@ class LearnVocab():
             vocab_data_concise = self.vocab_data.loc[self.vocab_data['Count'] == vocab_count]
             vocab_data_concise = vocab_data_concise.loc[vocab_data_concise['Conscious'] == False]
 
-
             # Break when ind exceeds the total number of vocabularies AND when vocab_count(exposures) exceeds the 
             # maximum number of exposures among the vocabularies in the WaitList
             if len(vocab_data_concise['Vocab']) < ind + 1 and \
@@ -378,8 +377,6 @@ class LearnVocab():
         # Store the sorted results in dict
         self.priority_ind = {'high_ind':high_ind, 'new_ind':new_ind, 'medium_ind':medium_ind, 'low_ind':low_ind}
         self.leftover_ind = leftover_ind
-        print(self.priority_ind)
-        print(self.leftover_ind)
         
     def vocab_suggestion_ratio(self):
         """
@@ -589,7 +586,7 @@ class LearnVocab():
         self.execute_update()
         
         # Gather vocabulary info from Lingua Robots API
-        self.vocab_dic = connect_lingua_api(self.vocabs, self.languages)
+        self.vocab_dic = connect_lingua_api(self.vocabs, self.languages, self.user)
         if self.check_empty == False:
             self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, self.user)
 
@@ -658,7 +655,8 @@ class ExecuteCode:
 # ko: Korean
 # en: English
 # zh-cn: Chinese
-users = [(None, "en"), ("Stella", "en"), ("Suru", "ko"), ("Mike", "ko"), ("Taylor", "en"), ("Song", "ko"), ("Pilchan", "en")]
+users = [(None, "en"), ("Stella", "en"), ("Suru", "ko"), ("Mike", "ko"), ("Taylor", "en"), ("Song", "ko"), ("Pilchan", "ko")]
+users = [("Test", "ko")]
 ExecuteCode = ExecuteCode(users)
 ExecuteCode.users_execute()
 

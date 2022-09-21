@@ -236,7 +236,7 @@ class ConnectSlack:
                             "text": str(c + 1) + ". " + vocab.capitalize()
                         }
                     }
-
+            
             all_def = vocab_dic[vocab][0]['definitions']
             all_ex = vocab_dic[vocab][0]['examples']
             all_sy = vocab_dic[vocab][0]['synonyms']
@@ -254,12 +254,21 @@ class ConnectSlack:
                 # Write Definitions
                 if all_def != np.nan and all_def != None:
                     message += emoji.emojize(':sparkles: *Definition:* \n')
-                for definition in range(len(all_def)):
-                    
+
+                # When lingua doesn't have its definition, it returns a translation in Korean
+                ## This only applies to Korean users
+                if isinstance(vocab_dic[vocab][0]['definitions'], list) == True:
+                    for definition in range(len(all_def)):
+                        
+                        if user[1] != "en":
+                            message += '>• ' + translator.translate(all_def[definition], src='en', dest=user[1]).text + '\n'
+                        else:
+                            message += '>• ' + all_def[definition] + '\n'
+                else:
                     if user[1] != "en":
-                        message += '>• ' + translator.translate(all_def[definition], src='en', dest=user[1]).text + '\n'
+                        message += '>• ' + all_def + '\n'
                     else:
-                        message += '>• ' + all_def[definition] + '\n'
+                        pass
                 message += '\n'
 
                 # Write Synonyms
@@ -279,7 +288,7 @@ class ConnectSlack:
                     message += '\n\n'
 
                 # Write Examples
-                if all_ex != []:
+                if all_ex != [] and all_ex != None:
                     message += emoji.emojize(':sparkles: *Example:* \n')
 
                     for example in range(len(all_ex)):
