@@ -59,7 +59,7 @@ class ConnectSlack:
         """
         memorized_vocabs_slack = [message['text'].split('\n')[0].split(':')[1].strip(' ').lower() for i, message in enumerate(slack_data['messages'])
                     if float(slack_data['messages'][i]['ts']) > three_days_ts and \
-                        "memorized" in message['text'][:10].lower() and \
+                        "done" in message['text'][:5].lower() and \
                         message['text'].split('\n')[0].split(':')[1].strip(' ').lower() in list(vocab_data['Vocab'].str.lower())]
 
         

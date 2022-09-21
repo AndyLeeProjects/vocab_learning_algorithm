@@ -187,7 +187,7 @@ class LearnVocab():
         # Update memorized vocabularies
         for vocab_element in memorized_vocabs_slack:
             pageId = list(self.vocab_data[self.vocab_data['Vocab'] == vocab_element]['pageId'])[0]
-            notion_update({"Conscious": {"checkbox": True}}, pageId, self.headers)
+            notion_update({"Conscious": {"checkbox": True}, "Status": {"select":{"name": "Wait List"}}}, pageId, self.headers)
         
 
 
@@ -378,6 +378,8 @@ class LearnVocab():
         # Store the sorted results in dict
         self.priority_ind = {'high_ind':high_ind, 'new_ind':new_ind, 'medium_ind':medium_ind, 'low_ind':low_ind}
         self.leftover_ind = leftover_ind
+        print(self.priority_ind)
+        print(self.leftover_ind)
         
     def vocab_suggestion_ratio(self):
         """
@@ -458,10 +460,10 @@ class LearnVocab():
             except ValueError:
                 pass
         
-        # If new_selection_index did not append enough vocabs, fill with low priority vocabs
+        # If new_selection_index did not append enough vocabs, fill with Medium/Low priority vocabs
         if len(new_selection_index) < self.num_vocab_sug:
             # Randomize low priority index & remove duplicates
-            leftovers = list(set(self.priority_ind['low_ind']))
+            leftovers = list(set(self.priority_ind['low_ind'] + self.priority_ind['medium_ind']))
             random.shuffle(leftovers)
             
             # get the difference 
