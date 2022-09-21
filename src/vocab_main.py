@@ -184,10 +184,10 @@ class LearnVocab():
             notion_create(self.database_id, vocab_element['Vocab'], self.headers, priority_status = vocab_element['Priority'],
                           context = vocab_element['Context'], img_url = vocab_element['URL'])
             
-        # Update memorized vocabularies
+        # Update memorized vocabularies 
         for vocab_element in memorized_vocabs_slack:
             pageId = list(self.vocab_data[self.vocab_data['Vocab'] == vocab_element]['pageId'])[0]
-            notion_update({"Conscious": {"checkbox": True}}, pageId, self.headers)
+            notion_update({"Conscious": {"checkbox": True}, "Status": {"select":{"name": "Wait List"}}}, pageId, self.headers)
         
 
 
@@ -657,6 +657,7 @@ class ExecuteCode:
 # en: English
 # zh-cn: Chinese
 users = [(None, "en"), ("Stella", "en"), ("Suru", "ko"), ("Mike", "ko"), ("Taylor", "en"), ("Song", "ko"), ("Pilchan", "en")]
+users = [("Test", "en")]
 ExecuteCode = ExecuteCode(users)
 ExecuteCode.users_execute()
 
