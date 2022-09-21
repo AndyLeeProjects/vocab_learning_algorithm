@@ -184,10 +184,10 @@ class LearnVocab():
             notion_create(self.database_id, vocab_element['Vocab'], self.headers, priority_status = vocab_element['Priority'],
                           context = vocab_element['Context'], img_url = vocab_element['URL'])
             
-        # Update memorized vocabularies 
+        # Update memorized vocabularies
         for vocab_element in memorized_vocabs_slack:
             pageId = list(self.vocab_data[self.vocab_data['Vocab'] == vocab_element]['pageId'])[0]
-            notion_update({"Conscious": {"checkbox": True}, "Status": {"select":{"name": "Wait List"}}}, pageId, self.headers)
+            notion_update({"Conscious": {"checkbox": True}}, pageId, self.headers)
         
 
 
@@ -205,9 +205,6 @@ class LearnVocab():
         # Fill in the missing cells (Count and Status) using their pageIds
         for m in range(len(missing_records_entry)):
             
-            # find its index
-            modified_ind = self.vocab_data[self.vocab_data['pageId'] == missing_records_entry[m][1]]['Index']
-
             # Update Notion DB -> Fill the count with 0
             if str(self.vocab_data['Count'].iloc[missing_records_entry[m][0]]) == str(np.nan):
                 notion_update({"Count": {"number": 0}}, missing_records_entry[m][1], self.headers)
@@ -229,8 +226,8 @@ class LearnVocab():
                 notion_update({"Status": {"select":{"name": "Wait List"}}}, missing_records_entry[m][1], self.headers)
                 self.vocab_data['Status'].iloc[modified_ind] = 'Wait List'
             
-            
-            
+            # find its index
+            modified_ind = self.vocab_data[self.vocab_data['pageId'] == missing_records_entry[m][1]]['Index']
             
 
         # Update the incorrectly inputted cells (Status) using their pageIds
@@ -655,17 +652,11 @@ class ExecuteCode:
             else:
                 Cnotion = LearnVocab(database_id, token_key, user=user)
                 Cnotion.execute_all()
-
+        
 # ko: Korean
 # en: English
 # zh-cn: Chinese
-<<<<<<< HEAD
 users = [(None, "en"), ("Stella", "en"), ("Suru", "ko"), ("Mike", "ko"), ("Taylor", "en"), ("Song", "ko"), ("Pilchan", "en")]
-users = [("Test", "en")]
-=======
-users = [(None, "en"), ("Stella", "en"), ("Suru", "ko"), ("Mike", "ko"), 
-         ("Taylor", "en"), ("Song", "ko"), ("Pilchan", "ko")]
->>>>>>> d466305b155fefc06542ec3a4fae7b3003046ed3
 ExecuteCode = ExecuteCode(users)
 ExecuteCode.users_execute()
 
