@@ -34,10 +34,11 @@ send_slack_message():
 """
 
 class ConnectSlack:
-    def __init__(self, token_key:str, user_id:str, client):
+    def __init__(self, token_key:str, user_id:str, client, user:tuple):
         self.token_key = token_key,
         self.user_id = user_id
         self.client = client
+        self.user = user
         
     def get_new_vocabs_slack(self, vocab_data:dict, languages:list):
         slack_data = self.client.conversations_history(channel=self.user_id)
@@ -53,6 +54,9 @@ class ConnectSlack:
         feedback_slack = [message['text'].split('\n')[0] for i, message in enumerate(slack_data['messages'])
                     if float(slack_data['messages'][i]['ts']) > three_days_ts and \
                         "feedback" in message['text'][:10].lower()]
+        feedback_slack_message = ""
+        for i, feedback in enumerate(feedback_slack):
+            feedback_slack_message += f"{i+1}. {feedback}\n"
         
         """
         Get Memorized Vocab from Slack 
@@ -202,7 +206,7 @@ class ConnectSlack:
 
 
 
-    def send_slack_message(self, vocab_dic:dict, imgURL:list, contexts:list, user:str = None):
+    def send_slack_message(self, vocab_dic:dict, imgURL:list, contexts:list, languages:list = []):
         """    
         send_slack_message():
             Organizes vocab data into a clean string format. Then, with Slack API, the string is 
@@ -250,56 +254,79 @@ class ConnectSlack:
             if isinstance(contexts[c], str) == True:
                 message += emoji.emojize('*Context:* ') + str(contexts[c]) + '\n\n'
 
-            try:
-                # Write Definitions
-                if all_def != np.nan and all_def != None:
-                    message += emoji.emojize(':sparkles: *Definition:* \n')
+            
+            # Write Definitions
+            if all_def != np.nan and all_def != None:
+                message += emoji.emojize(':sparkles: *Definition:* \n')
 
-                # When lingua doesn't have its definition, it returns a translation in Korean
-                ## This only applies to Korean users
-                if isinstance(vocab_dic[vocab][0]['definitions'], list) == True:
-                    for definition in range(len(all_def)):
-                        
-                        if user[1] != "en":
-                            message += '>• ' + translator.translate(all_def[definition], src='en', dest=user[1]).text + '\n'
-                        else:
-                            message += '>• ' + all_def[definition] + '\n'
+            # When lingua doesn't have its definition, it returns a translation in Korean
+            ## This only applies to Korean users
+            if isinstance(vocab_dic[vocab][0]['definitions'], list) == True:
+                for definition in range(len(all_def)):
+                    if len(languages) == 0 or (len(languages) == 1 and languages[0] == "en"):
+                        message += '>• ' + all_def[definition] + '\n'
+                    elif len(languages) == 1 and languages[0] != "en":
+                        message += '>• ' + translator.translate(all_def[definition], src='en', dest=languages[0]).text + '\n'
+                    else:
+                        primary_lang = languages[0]
+                        total_lang = len(languages)
+                        for lang in languages:
+                            if lang == primary_lang:
+                                message += '>• ' + translator.translate(all_def[definition], src='en', dest=lang).text + '\n'
+                            else:
+                                message += '>> ' + translator.translate(all_def[definition], src='en', dest=lang).text + '\n'
+                        message += '\n'
+            else:
+                if "ko" in languages:
+                    message += '>• ' + all_def + ' *(구글 번역)*\n'
                 else:
-                    if user[1] != "en":
-                        message += '>• ' + all_def + ' *(구글 번역)*\n'
-                    else:
-                        pass
-                message += '\n'
+                    pass
+            message += '\n'
 
-                # Write Synonyms
-                synonyms = []
-                if all_sy != None:
-                    if user[1] != "en":
-                        message += emoji.emojize(':sparkles: *Synonyms:* ') + translator.translate(all_sy[0][0], src='en', dest=user[1]).text
-                    else:
-                        message += emoji.emojize(':sparkles: *Synonyms:* ') + all_sy[0][0]
-                    synonyms.append(all_sy[0][0])
-                    for synonym in all_sy[1:]:
-                        if synonym[0] not in synonyms:
-                            if user[1] != "en":
-                                message += ', ' + translator.translate(synonym[0], src='en', dest=user[1]).text
+            # Write Synonyms
+            synonyms = []
+            if all_sy != None:
+                if self.user[1] != "en":
+                    message += emoji.emojize(':sparkles: *Synonyms:* \n')
+                else:
+                    message += emoji.emojize(':sparkles: *Synonyms:* \n')
+
+                message += ">• "
+                temp = ""
+                for i, synonym in enumerate(all_sy):
+                    if synonym[0] not in synonyms:
+                        if len(languages) == 0:
+                            if i == 0:
+                                message += synonym[0]
                             else:
                                 message += ', ' + synonym[0]
-                    message += '\n\n'
-
-                # Write Examples
-                if all_ex != [] and all_ex != None:
-                    message += emoji.emojize(':sparkles: *Example:* \n')
-
-                    for example in range(len(all_ex)):
-                        if user[1] != "en":
-                            message += '>• ' + all_ex[0][example].strip('\n ') + '\n'
-                            message += '> ' + translator.translate(all_ex[0][example], src='en', dest=user[1]).text.strip('\n ') + '\n>\n'
                         else:
-                            message += '>• ' + all_ex[0][example].strip('\n ') + '\n'
+                            primary_lang = languages[0]
+                            for lang in languages:
+                                if lang == primary_lang:
+                                    message += translator.translate(synonym[0], src='en', dest=lang).text
+                                else:
+                                    temp += translator.translate(synonym[0], src='en', dest=lang).text
+                            message += f" ({temp})"
+                            
+                message += '\n\n'
 
-            except:
-                pass
+            # Write Examples
+            if all_ex != [] and all_ex != None:
+                message += emoji.emojize(':sparkles: *Example:* \n')
+
+                for example in range(len(all_ex[0])):
+                    if len(languages) == 0:
+                        message += '>• ' + all_ex[0][example].strip('\n ') + '\n'
+                        
+                    else:
+                        primary_lang = languages[0]
+                        for lang in languages:
+                            if lang == primary_lang:
+                                message += '>• ' + translator.translate(all_ex[0][example], src='en', dest=lang).text.strip('\n ') + '\n'
+                            else:
+                                message += '>> ' + translator.translate(all_ex[0][example], src='en', dest=lang).text.strip('\n ') + '\n'
+                        message += "\n"
             
             content_block = {
                     "type": "section",
@@ -337,74 +364,74 @@ class ConnectSlack:
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": self.create_manual_lang(user)
+                        "text": self.create_manual_lang()
                             }
                 }
-        if user[0] != None:
+        if self.user[0] != None:
             blocks.append(manual)
 
         # Set up notification message in Korean & English
         # Host
-        if user[0] == None:
+        if self.user[0] == None:
             notification_msg = "Andy" + ", check out the new vocabularies!"
         # English users
-        elif user[1] == "en":
-            notification_msg = user[0] + ", check out the new vocabularies!"
+        elif self.user[1] == "en":
+            notification_msg = self.user[0] + ", check out the new vocabularies!"
         # Korean users
-        elif user[1] == "ko":
-            notification_msg = user[0] + "님, 새로운 단어들이 도착했어요!"
+        elif self.user[1] == "ko":
+            notification_msg = self.user[0] + "님, 새로운 단어들이 도착했어요!"
 
         self.client.chat_postMessage(
                 text = notification_msg,
-                channel = secret.connect_slack("user_id_vocab", user=user[0]),
+                channel = secret.connect_slack("user_id_vocab", user=self.user[0]),
                 blocks = blocks)
 
         
-    def send_slack_warnings(self, user:str = None):
+    def send_slack_warnings(self):
         """
-        send_slack_feedback(): Sends retrieved feedbacks to the host Slack main channel.
+        send_slack_warnings(): When there is not enough vocabularies in the Notion database, users are informed with the warning.
 
         Args:
-            feedback (str, optional): feedback from a user. Defaults to None.
+            user (str, optional): user information. Defaults to None.
         """
-        if user[1] == "ko":
+        if self.user[1] == "ko":
             text_message = "\n\n\n>************************************\n>*노션 데이터 베이스에 단어가 부족합니다.*\n>*단어를 추가해 주세요*\n>************************************"
         else:
             text_message = "\n\n\n>************************************\n>*There is not enough vocabularies in the Database.*\n>*Please add more vocabularies*\n>************************************"
         
         # Add Manual to the message 
         
-        if user[1] == "en":
+        if self.user[1] == "en":
             notification_msg = "Please add more vocabularies"
-        elif user[1] == "ko":
+        elif self.user[1] == "ko":
             notification_msg = "단어가 부족합니다. 단어를 추가해 주세요"
         message_block = [{
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": text_message + self.create_manual_lang(user)
+                        "text": text_message + self.create_manual_lang()
                             }
                 }]
         self.client.chat_postMessage(
                 text = notification_msg,
-                channel = secret.connect_slack("user_id_vocab", user=user[0]),
+                channel = secret.connect_slack("user_id_vocab", user=self.user[0]),
                 blocks = message_block)
         
-    def create_manual_lang(self, user:str = None) -> str:
+    def create_manual_lang(self) -> str:
         manual = ""
 
         # Korean user Manual
-        if user[0] != None and user[1] == "ko":
+        if self.user[0] != None and self.user[1] == "ko":
             manual += '\n\n\n\n************* *메뉴얼* *************\n`* symbol`:  *[중요성 - 상]*\n     (예시: new: symphony*)\n`No symbol`:  *[중요성 - 중]*\n     (예시: new: symphony)\n`^ symbol`:  *[중요성 - 하]*\n     (예시: new: symphony^)\n`+ symbol`:  *[사진 자동 추가]*\n     (예시: new: symphony+,   new: symphony*+,   new: symphony+^)\n\n'
             manual += '************ *단어추가 예시* ************\n`new: symphony*+`    *[\"new\"로 시작]*\n`context: orchestra symphony`    *[선택]*\n`URL: <img address>`    *[선택]*\n`Priority: High`    *[선택]*\n\n'
             manual += '*피드백 작성 방법* -> (예시: feedback: ~ 수정 부탁드려요.)\n\n'
-            manual += f'<{secret.vocab("db_url", user=user[0])}|*나의 노션 데이터베이스로 이동*>'
+            manual += f'<{secret.vocab("db_url", user=self.user[0])}|*나의 노션 데이터베이스로 이동*>'
         
         # US user Manual
-        elif user[0] != None and user[1] == "en":
+        elif self.user[0] != None and self.user[1] == "en":
             manual += '\n\n\n\n************ *Input Manual* ************\n`* symbol`:  *[High Priority]* \n     (ex. new: symphony*)\n`No Symbol`:  *[Medium Priority]* \n     (ex. new: symphony)\n`^ symbol`:  *[Low Priority]* \n     (ex. new: symphony^)\n`+ symbol`:  *[Add automated Image]* \n     (ex. new: symphony+,   new: symphony*+,   new: symphony+^)\n\n'
             manual += '************ *Example Input* ************\n`new: symphony*+`    *[Must include \"new\"]*\n`context: orchestra symphony`    *[Optional]*\n`URL: <img address>`    *[Optional]*\n`Priority: High`    *[Optional]*\n\n'
             manual += '*Write feedbacks* -> (ex. feedback: Please fix this issue!)\n\n'
-            manual += f'<{secret.vocab("db_url", user=user[0])}|*Go To My Notion Database*>'
+            manual += f'<{secret.vocab("db_url", user=self.user[0])}|*Go To My Notion Database*>'
         
         return manual

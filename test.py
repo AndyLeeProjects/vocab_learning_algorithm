@@ -3,15 +3,28 @@ from googletrans import Translator
 from langdetect import detect
 from slack import WebClient
 from src.secret import secret
+import requests
 
 translator = Translator()
-result = translator.translate("great minds think alike", src='en', dest='ko').text
-# print(result)
+result = translator.translate("A shallow portion of an otherwise deep body of water.", src='en', dest='ko').text
+print(result)
 # print(detect("파죽지세"))
 
 
+from src.notion_api import ConnectNotion
+Settings = ConnectNotion(secret.vocab("settings_id", "Test"), secret.notion_API("token_key"))
+settings_data = Settings.retrieve_data()
 
+for k in settings_data.keys():
+    print(k)
+    print(settings_data[k])
+    print()
 
+url = {'imgURL': 
+    {'id': 'vA>}', 'type': 'files', 'files': 
+        [{'name': 'vocab_img', 'type': 'external', 'external': 
+            {'url': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSSQgsXt6XNrZu481VSOGVeQX5wU0_B49vrqTyYrvoMMlBuXk5qCiY3mzElsc8&amp;s'}
+            }]}}
 # # Redefine inputs
 # database_id = secret.vocab('database_id')
 # from src.notion_api import ConnectNotion

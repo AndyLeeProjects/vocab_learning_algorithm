@@ -124,7 +124,7 @@ class LearnVocab():
 
         # Authenticate to the Slack API via the generated token
         client = WebClient(secret.connect_slack('token_key', user = user[0]))
-        self.Slack = ConnectSlack(secret.connect_slack("token_key", user = user[0]), secret.connect_slack("user_id_vocab", user = user[0]), client)
+        self.Slack = ConnectSlack(secret.connect_slack("token_key", user = user[0]), secret.connect_slack("user_id_vocab", user = user[0]), client, self.user)
         
         # Set Headers for Notion API
         self.headers = {
@@ -164,8 +164,8 @@ class LearnVocab():
             1. newly added vocabularies -> Add them to the Notion DB
             2. memorized vocabularies -> Move them to 'Memorized' DB
         """
-        self.languages = ["ko", "zh-cn"]
-        new_vocabs_slack, memorized_vocabs_slack, self.feedback_slack = self.Slack.get_new_vocabs_slack(self.vocab_data, self.languages)
+        self.supportable_languages = ["ko", "zh-cn"]
+        new_vocabs_slack, memorized_vocabs_slack, self.feedback_slack = self.Slack.get_new_vocabs_slack(self.vocab_data, self.supportable_languages)
         
         # If there is any feedback from the users, notify the host
         if self.feedback_slack != []:
@@ -585,10 +585,19 @@ class LearnVocab():
         self.adjust_suggestion_rate()
         self.execute_update()
         
+        # Get Preferred Languages in the Notion Settings table 
+        try:
+            Settings = ConnectNotion(secret.vocab("settings_id", self.user[0]), secret.notion_API("token_key"))
+            settings_data = Settings.retrieve_data()
+            languages = settings_data['Language'][0]
+        except:
+            languages = []
+
         # Gather vocabulary info from Lingua Robots API
-        self.vocab_dic = connect_lingua_api(self.vocabs, self.languages, self.user)
+        self.vocab_dic = connect_lingua_api(self.vocabs, self.supportable_languages, self.user, languages)
         if self.check_empty == False:
-            self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, self.user)
+            
+            self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, languages)
 
 
 
@@ -656,6 +665,7 @@ class ExecuteCode:
 # en: English
 # zh-cn: Chinese
 users = [(None, "en"), ("Stella", "en"), ("Suru", "ko"), ("Mike", "ko"), ("Taylor", "en"), ("Song", "ko"), ("Pilchan", "ko")]
+users = [("Test", "en")]
 ExecuteCode = ExecuteCode(users)
 ExecuteCode.users_execute()
 
