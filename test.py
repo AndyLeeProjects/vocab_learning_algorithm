@@ -5,8 +5,8 @@ from slack import WebClient
 from src.secret import secret
 
 translator = Translator()
-result = translator.translate("홍어", src='ko', dest='en').text
-
+result = translator.translate("great minds think alike", src='en', dest='ko').text
+print(result)
 print(detect("파죽지세"))
 
 

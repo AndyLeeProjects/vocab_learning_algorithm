@@ -4,7 +4,7 @@ import requests, json
 from googletrans import Translator
 from langdetect import detect
 
-def connect_lingua_api(vocabs:list, languages:list) -> dict:
+def connect_lingua_api(vocabs:list, languages:list, user:tuple) -> dict:
     """
     connect_lingua_api()
         Using LinguaAPI, the definitions, examples, synonyms and contexts are gathered.
@@ -81,8 +81,17 @@ def connect_lingua_api(vocabs:list, languages:list) -> dict:
                             if 'usageExamples' in vocab_dat[j]['senses'][i].keys()]
             except:
                 examples = None
+
+        # if the definition does not exist in Lingua, translate it in Korean
+        elif user[1] == "ko":
+            translator = Translator()
+            definitions = translator.translate(vocab, src="en", dest='ko').text
+
+        # revert the vocab back to its original (before translation)
         if vocab_orig != None:
             vocab = vocab_orig
+        
+        # Collect vocab details
         vocab_dic.setdefault(vocab, []).append({'definitions': definitions,
                                                 'examples': examples,
                                                 'synonyms': synonyms,
