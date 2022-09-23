@@ -15,10 +15,12 @@ from src.notion_api import ConnectNotion
 Settings = ConnectNotion(secret.vocab("settings_id", "Test"), secret.notion_API("token_key"))
 settings_data = Settings.retrieve_data()
 
-for k in settings_data.keys():
-    print(k)
-    print(settings_data[k])
-    print()
+
+from src.slack_api import ConnectSlack
+#client = WebClient(secret.connect_slack('token_key', user = user[0]))
+#slack_data = client.conversations_history(channel="")
+#print(slack_data)
+
 
 url = {'imgURL': 
     {'id': 'vA>}', 'type': 'files', 'files': 
