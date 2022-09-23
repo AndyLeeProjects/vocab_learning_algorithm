@@ -308,7 +308,11 @@ class ConnectSlack:
                                 else:
                                     temp += translator.translate(synonym[0], src='en', dest=lang).text
                             if temp != "":
+                                pass
+                            elif (i+1) == len(all_sy):
                                 message += f" ({temp})"
+                            else:
+                                message += f" ({temp}), "
                             
                 message += '\n\n'
 
