@@ -65,6 +65,7 @@ def notion_create(database_id:str, vocab:str, headers:dict, priority_status:str 
         newPageData["properties"]["Context"] = {"rich_text": [{"type": "text","text": {"content": context}}]}
     if img_url != None:
         newPageData["properties"]["imgURL"] = {"files": [{"type": "external","name": "vocab_img","external": {"url": img_url}}]}
+        newPageData["properties"]["Img_show"] = {"checkbox": True}
     if priority_status != None:
         newPageData["properties"]["Priority"] = {"select": {"name": priority_status}}
 
