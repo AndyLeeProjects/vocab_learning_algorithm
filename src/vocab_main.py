@@ -510,7 +510,7 @@ class LearnVocab():
         print('next_vocabs: ', next_vocabs)
         print()
         if next_vocabs == []:
-            self.Slack.send_slack_warnings(self.user)
+            self.Slack.send_slack_warnings()
             self.check_empty = True
         else:
             self.check_empty = False
