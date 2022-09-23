@@ -211,8 +211,7 @@ class LearnVocab():
                 self.vocab_data['Count'].iloc[modified_ind] = 0.0
 
             # Update Notion DB -> Fill in image
-            if self.vocab_data['Img_show'].iloc[missing_records_entry[m][0]] == True and \
-                str(self.vocab_data['imgURL'].iloc[missing_records_entry[m][0]]) == str(np.nan):
+            if str(self.vocab_data['imgURL'].iloc[missing_records_entry[m][0]]) == str(np.nan):
                 img_url = scrape_google_image(self.vocab_data['Vocab'].iloc[missing_records_entry[m][0]])
                 notion_update({"imgURL": {"files": [{"type": "external","name": "vocab_img","external": {"url": img_url}}]}}, missing_records_entry[m][1], self.headers)
             
@@ -665,6 +664,7 @@ class ExecuteCode:
 # en: English
 # zh-cn: Chinese
 users = [(None, "en"), ("Stella", "en"), ("Suru", "ko"), ("Mike", "ko"), ("Taylor", "en"), ("Song", "ko"), ("Pilchan", "ko")]
+users = [("Test", "ko")]
 ExecuteCode = ExecuteCode(users)
 ExecuteCode.users_execute()
 
