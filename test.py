@@ -12,8 +12,9 @@ print(result)
 
 
 from src.notion_api import ConnectNotion
-Settings = ConnectNotion(secret.vocab("settings_id", "Test"), secret.notion_API("token_key"))
+Settings = ConnectNotion(secret.vocab("settings_id", "Mike"), secret.notion_API("token_key"))
 settings_data = Settings.retrieve_data()
+print(settings_data)
 
 
 from src.slack_api import ConnectSlack
