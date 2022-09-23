@@ -667,5 +667,3 @@ users = [(None, "en"), ("Stella", "en"), ("Suru", "ko"), ("Mike", "ko"), ("Taylo
 ExecuteCode = ExecuteCode(users)
 ExecuteCode.users_execute()
 
-
-
