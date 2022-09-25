@@ -372,8 +372,8 @@ class ConnectSlack:
                         "text": self.create_manual_lang()
                             }
                 }
-        if self.user[0] != None:
-            blocks.append(manual)
+        
+        blocks.append(manual)
 
         # Set up notification message in Korean & English
         # Host
@@ -438,5 +438,8 @@ class ConnectSlack:
             manual += '************ *Example Input* ************\n`new: symphony*`    *[Must include \"new\"]*\n`context: orchestra symphony`    *[Optional]*\n`URL: <img address>`    *[Optional]*\n`Priority: High`    *[Optional]*\n\n'
             manual += '*Write feedbacks* -> (ex. feedback: Please fix this issue!)\n\n'
             manual += f'<{secret.vocab("db_url", user=self.user[0])}|*Go To My Notion Database*>'
+        
+        else:
+            manual = f'<{secret.vocab("db_url", user=self.user[0])}|*Go To My Notion Database*>'
         
         return manual
