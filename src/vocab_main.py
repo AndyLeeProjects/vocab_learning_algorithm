@@ -588,16 +588,17 @@ class LearnVocab():
         self.adjust_suggestion_rate()
         self.execute_update()
         
-        # Get Preferred Languages in the Notion Settings table 
+        # Get Preferred Languages in the Notion Settings table
         try:
             Settings = ConnectNotion(secret.vocab("settings_id", self.user[0]), secret.notion_API("token_key"))
             settings_data = Settings.retrieve_data()
-            languages = settings_data['Language'][0]
+            languages = settings_data['Definition Language'][0]
+            input_languages = settings_data['Input Language'][0]
         except:
             languages = []
 
         # Gather vocabulary info from Lingua Robots API
-        self.vocab_dic = connect_lingua_api(self.vocabs, self.supportable_languages, self.user, languages)
+        self.vocab_dic = connect_lingua_api(self.vocabs, self.supportable_languages, self.user, languages, input_languages)
         if self.check_empty == False:
             self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, languages)
 

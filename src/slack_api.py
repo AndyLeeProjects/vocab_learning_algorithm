@@ -13,6 +13,7 @@ from secret import secret
 from spellchecker import SpellChecker
 import emoji
 from langdetect import detect
+from notion_api import ConnectNotion
 
 
 """
@@ -41,6 +42,13 @@ class ConnectSlack:
         self.user = user
         
     def get_new_vocabs_slack(self, vocab_data:dict, languages:list):
+
+        # Get the input languages
+        Settings = ConnectNotion(secret.vocab("settings_id", self.user[0]), secret.notion_API("token_key"))
+        settings_data = Settings.retrieve_data()
+        languages = settings_data['Definition Language'][0]
+        input_language = settings_data['Input Language'][0]
+
         slack_data = self.client.conversations_history(channel=self.user_id)
         new_vocabs_slack = []
         
@@ -75,7 +83,7 @@ class ConnectSlack:
         ## get messages that starts with "new"
         ## get messages that are not currently included in the vocab Notion DB
         ### work with smaller data (ideally, length less than 10)
-        spell = SpellChecker()
+        spell = SpellChecker(language=input_language[0])
         messages_new = []
         for i, message in enumerate(slack_data['messages']):
             
