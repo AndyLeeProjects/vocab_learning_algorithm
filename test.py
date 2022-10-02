@@ -4,12 +4,13 @@ from langdetect import detect
 from slack import WebClient
 from src.secret import secret
 import requests
+from src.notion_api import ConnectNotion
 
+print(detect("fondo"))
 translator = Translator()
-result = translator.translate("A shallow portion of an otherwise deep body of water.", src='en', dest='es').text
+result = translator.translate("fondo", src='es', dest='en').text
 print(result)
 # print(detect("파죽지세"))
-
 
 from src.notion_api import ConnectNotion
 Settings = ConnectNotion(secret.vocab("settings_id", "Mike"), secret.notion_API("token_key"))

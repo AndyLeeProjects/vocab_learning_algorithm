@@ -77,7 +77,6 @@ class LearnVocab():
         """
 
         # Get data from Notion_API.py
-
         filters_unmemorized = {"property": "Status",
                                "select":{"does_not_equal": "Memorized"}   
                                 }
@@ -113,6 +112,16 @@ class LearnVocab():
             self.vocab_data_memorized = Notion_memorized.retrieve_data()
         except:
             self.vocab_data_memorized = []
+
+        # Get Preferred Languages in the Notion Settings table
+        try:
+            Settings = ConnectNotion(secret.vocab("settings_id", self.user[0]), secret.notion_API("token_key"))
+            settings_data = Settings.retrieve_data()
+            self.languages = settings_data['Definition Language'][0]
+            self.input_language = settings_data['Input Language'][0]
+        except:
+            self.languages = []
+            self.input_language = ["en"]
         
         # Total number of vocabularies for each slack notification 
         ## num_vocab_sug will change depending on the total number of vocabularies on the waitlist
@@ -180,7 +189,7 @@ class LearnVocab():
             for key in missing_keys:
                 vocab_element[key] = None
             if vocab_element["Img_show"] == True:
-                vocab_element["URL"] = scrape_google_image(vocab_element["Vocab"])
+                vocab_element["URL"] = scrape_google_image(vocab_element["Vocab"], self.input_language)
             notion_create(self.database_id, vocab_element['Vocab'], self.headers, priority_status = vocab_element['Priority'],
                           context = vocab_element['Context'], img_url = vocab_element['URL'])
             
@@ -587,20 +596,11 @@ class LearnVocab():
         self.fill_empty_cells()
         self.adjust_suggestion_rate()
         self.execute_update()
-        
-        # Get Preferred Languages in the Notion Settings table
-        try:
-            Settings = ConnectNotion(secret.vocab("settings_id", self.user[0]), secret.notion_API("token_key"))
-            settings_data = Settings.retrieve_data()
-            languages = settings_data['Definition Language'][0]
-            input_languages = settings_data['Input Language'][0]
-        except:
-            languages = []
 
         # Gather vocabulary info from Lingua Robots API
-        self.vocab_dic = connect_lingua_api(self.vocabs, self.supportable_languages, self.user, languages, input_languages)
+        self.vocab_dic = connect_lingua_api(self.vocabs, self.supportable_languages, self.user, self.languages, self.input_language)
         if self.check_empty == False:
-            self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, languages)
+            self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, self.languages)
 
 
 

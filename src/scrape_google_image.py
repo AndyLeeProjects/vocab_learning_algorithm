@@ -3,7 +3,7 @@ from langdetect import detect
 from googletrans import Translator
 
 
-def scrape_google_image(vocab:str):
+def scrape_google_image(vocab:str, input_language:list = ["en"]):
     """
     scrape_google_image(): by using urllib module, it will scrape the first image on the google image page
 
@@ -18,7 +18,10 @@ def scrape_google_image(vocab:str):
     lang = detect(vocab)
     
     # If the vocab is not in English, translate it before getting the details
-    if lang != "en":
+    if "es" in input_language:
+        translator = Translator()
+        vocab = translator.translate(vocab, src="es", dest='en').text
+    elif lang != "en":
         translator = Translator()
         vocab = translator.translate(vocab, src=lang, dest='en').text
         
