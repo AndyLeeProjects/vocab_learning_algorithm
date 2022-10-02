@@ -164,7 +164,7 @@ class LearnVocab():
             1. newly added vocabularies -> Add them to the Notion DB
             2. memorized vocabularies -> Move them to 'Memorized' DB
         """
-        self.supportable_languages = ["ko", "zh-cn"]
+        self.supportable_languages = ["ko", "zh-cn", "es"]
         new_vocabs_slack, memorized_vocabs_slack, self.feedback_slack = self.Slack.get_new_vocabs_slack(self.vocab_data, self.supportable_languages)
         
         # If there is any feedback from the users, notify the host
@@ -652,7 +652,7 @@ class ExecuteCode:
             token_key = secret.notion_API("token")
             
             # If the user is in the Korean Timezone, skip between 12pm and 7pm
-            if user[1] == "ko":
+            if user[2] == "KO":
                 # Do not execute overnight in Korea Timezone
                 Cnotion = LearnVocab(database_id, token_key, user=user)
                 if self.is_time_between(time_time(12,00),time_time(19,00)) == False:
@@ -660,6 +660,16 @@ class ExecuteCode:
                 else:
                     Cnotion.update_vocabs_from_slack()
                     print("User Skipped [Korea TimeZone]\n")
+                    
+            # If the user is in the Spain Timezone, skip between 8pm and 6am
+            elif user[2] == "ES":
+                Cnotion = LearnVocab(database_id, token_key, user=user)
+                if self.is_time_between(time_time(20,00),time_time(4,00)) == False:
+                    Cnotion.execute_all()
+                else:
+                    Cnotion.update_vocabs_from_slack()
+                    print("User Skipped [Spain TimeZone]\n")
+                    
             else:
                 Cnotion = LearnVocab(database_id, token_key, user=user)
                 Cnotion.execute_all()
@@ -667,7 +677,9 @@ class ExecuteCode:
 # ko: Korean
 # en: English
 # zh-cn: Chinese
-users = [(None, "en"), ("Stella", "en"), ("Suru", "ko"), ("Mike", "ko"), ("Taylor", "en"), ("Song", "ko"), ("Pilchan", "ko")]
+users = [(None, "en", "US"), ("Stella", "en", "US"), ("Suru", "ko", "KO"), 
+         ("Mike", "ko", "KO"), ("Taylor", "en", "US"), ("Song", "ko", "KO"), 
+         ("Pilchan", "ko", "KO"), ("Julian", "ko", "ES")]
 ExecuteCode = ExecuteCode(users)
 ExecuteCode.users_execute()
 

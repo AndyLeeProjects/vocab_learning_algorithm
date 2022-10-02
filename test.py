@@ -6,7 +6,7 @@ from src.secret import secret
 import requests
 
 translator = Translator()
-result = translator.translate("A shallow portion of an otherwise deep body of water.", src='en', dest='ko').text
+result = translator.translate("A shallow portion of an otherwise deep body of water.", src='en', dest='es').text
 print(result)
 # print(detect("파죽지세"))
 
@@ -16,11 +16,17 @@ Settings = ConnectNotion(secret.vocab("settings_id", "Mike"), secret.notion_API(
 settings_data = Settings.retrieve_data()
 print(settings_data)
 
+user = "Mike"
+#from src.slack_api import ConnectSlack
+client = WebClient(secret.connect_slack('token_key', user = user))
+slack_data = client.conversations_history(channel="C044619U31Q")
+last_read = slack_data
+print(last_read)
 
-from src.slack_api import ConnectSlack
-#client = WebClient(secret.connect_slack('token_key', user = user[0]))
-#slack_data = client.conversations_history(channel="")
-#print(slack_data)
+# from datetime import datetime
+
+# dt_object = datetime.fromtimestamp(float(last_read))
+# print(dt_object)
 
 
 url = {'imgURL': 
