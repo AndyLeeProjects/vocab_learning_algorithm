@@ -5,6 +5,17 @@ from slack import WebClient
 from src.secret import secret
 import requests
 from src.notion_api import ConnectNotion
+from spellchecker import SpellChecker
+import enchant
+
+d = enchant.Dict("en_US")
+print(d.check("untiled") == True)
+
+spell = SpellChecker()
+
+print(spell.correction("mesh"))
+
+
 
 print(detect("fondo"))
 translator = Translator()

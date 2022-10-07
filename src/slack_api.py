@@ -14,6 +14,7 @@ from spellchecker import SpellChecker
 import emoji
 from langdetect import detect
 from notion_api import ConnectNotion
+import enchant
 
 
 """
@@ -83,7 +84,10 @@ class ConnectSlack:
         ## get messages that starts with "new"
         ## get messages that are not currently included in the vocab Notion DB
         ### work with smaller data (ideally, length less than 10)
-        spell = SpellChecker(language=input_language[0])
+        
+        spell_check = enchant.Dict("en_US")
+        spell_correct = SpellChecker(language=input_language[0])
+
         messages_new = []
         for i, message in enumerate(slack_data['messages']):
             
@@ -100,8 +104,8 @@ class ConnectSlack:
                 if lang not in languages:
 
                     # Spell check (in case the vocab was added using spell check feature)
-                    if spell.correction(vocab) != None:
-                        vocab = spell.correction(vocab)
+                    if spell_check.check(vocab) == False:
+                        vocab = spell_correct.correction(vocab)
                     
                 # Check if the vocab is already in the vocab_data
                 if vocab not in list(vocab_data['Vocab'].str.lower()):
@@ -141,10 +145,10 @@ class ConnectSlack:
                         value = value.replace('+', '')
                     
                     # Check their spellings
-                    if spell.correction(value) == None or lang in languages:
+                    if spell_check.check(value) == True or lang in languages:
                         pass
                     else:
-                        value = spell.correction(value)
+                        value = spell_correct.correction(value)
                     
                     temp['Vocab'] = value
                     
