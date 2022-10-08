@@ -195,10 +195,15 @@ class LearnVocab():
             
         # Update memorized vocabularies
         for vocab_element in memorized_vocabs_slack:
-            pageId = list(self.vocab_data[self.vocab_data['Vocab'] == vocab_element]['pageId'])[0]
-            notion_update({"Conscious": {"checkbox": True}, "Status": {"select":{"name": "Wait List"}}}, pageId, self.headers)
+            
+            # In case the vocab has already been moved to "Memorized" DB
+            try:
+                pageId = list(self.vocab_data[self.vocab_data['Vocab'] == vocab_element]['pageId'])[0]
+                notion_update({"Conscious": {"checkbox": True}, "Status": {"select":{"name": "Wait List"}}}, pageId, self.headers)
+            except IndexError:
+                pass
+            
         
-
 
     def fill_empty_cells(self):
         """
