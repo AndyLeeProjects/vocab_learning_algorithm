@@ -26,6 +26,7 @@ def scrape_google_image(vocab:str, input_language:list = ["en"]):
         vocab = translator.translate(vocab, src=lang, dest='en').text
         
     vocab = vocab.replace(' ', '+')
+    vocab = vocab.replace('\'', '')
     
     req = Request(
         url = f'https://www.google.com/search?q={vocab}&tbm=isch', 
