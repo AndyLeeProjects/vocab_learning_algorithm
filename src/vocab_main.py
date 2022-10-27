@@ -605,6 +605,9 @@ class LearnVocab():
         # Gather vocabulary info from Lingua Robots API
         self.vocab_dic = connect_lingua_api(self.vocabs, self.supportable_languages, self.user, self.languages, self.input_language)
         if self.check_empty == False:
+            print(self.contexts)
+            print(self.vocab_dic)
+            print(self.imgURL)
             self.Slack.send_slack_message(self.vocab_dic, self.imgURL, self.contexts, self.languages)
 
 
