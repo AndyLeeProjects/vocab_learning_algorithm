@@ -1,12 +1,10 @@
 
-from secret import secret
+from secret import lingua_credentials
 import requests, json
-from googletrans import Translator
-from langdetect import detect
 
-def connect_lingua_api(vocabs:list, supportable_languages:list, user:tuple, languages:list = [], input_languages:list = "en") -> dict:
+def get_definitions(vocabs:list):
     """
-    connect_lingua_api()
+    get_definitions()
         Using LinguaAPI, the definitions, examples, synonyms and contexts are gathered.
         Then they are stored into a dictionary format. 
 
@@ -14,36 +12,34 @@ def connect_lingua_api(vocabs:list, supportable_languages:list, user:tuple, lang
     vocab_dic = {}
     for vocab in vocabs:
         
-        # detect language
-        lang = detect(vocab)
-        
-        # If the vocab is not in English, translate it before getting the details
-        if "es" in input_languages:
-            translator = Translator()
-            vocab_orig = vocab
-            vocab = translator.translate(vocab, src="es", dest='en').text
-        
-        elif lang in supportable_languages:
-            translator = Translator()
-            vocab_orig = vocab
-            vocab = translator.translate(vocab, src=lang, dest='en').text
-        else:
-            vocab_orig = None
-        
         url = "https://lingua-robot.p.rapidapi.com/language/v1/entries/en/" + \
             vocab.lower().strip(' ')
+
         headers = {
-            "X-RapidAPI-Key": secret.lingua_API('API Key'),
+            "X-RapidAPI-Key": lingua_credentials(),
             "X-RapidAPI-Host": "lingua-robot.p.rapidapi.com"
         }
         
         # Request Data
         response = requests.request("GET", url, headers=headers)
         data = json.loads(response.text)
-        audio_url = None
 
         # DEFINE vocab_info
         # try: Some vocabularies do not have definitions (ex: fugazi)
+        url = "https://lingua-robot.p.rapidapi.com/language/v1/entries/en/" + \
+            vocab.lower().strip(' ')
+
+        headers = {
+            "X-RapidAPI-Key": lingua_credentials(),
+            "X-RapidAPI-Host": "lingua-robot.p.rapidapi.com"
+        }
+
+        # Request Data
+        response = requests.request("GET", url, headers=headers)
+        data = json.loads(response.text)
+        data
+        data['entries'][0]['lexemes']
+
         try:
             vocab_dat = data['entries'][0]['lexemes']
         except IndexError:
@@ -55,22 +51,19 @@ def connect_lingua_api(vocabs:list, supportable_languages:list, user:tuple, lang
         if vocab_dat != None:
             # GET DEFINITIONS
             # try: If the definition is not in Lingua Dictionary, output None
-
             definitions = [vocab_dat[j]['senses'][i]['definition']
                             for j in range(len(vocab_dat)) for i in range(len(vocab_dat[j]['senses']))]
             definitions = definitions[:5]
             
             # GET AUDIO URLS
-            if "es" not in input_languages:
-                try:
-                    for i in range(len(data['entries'][0]['pronunciations'])):
-                        try:
-                            audio_url = data['entries'][0]['pronunciations'][i]['audio']['url']
-                            break
-                        except:
-                            pass
-                except KeyError:
-                    pass
+            try:
+                for i in range(len(data['entries'][0]['pronunciations'])):
+                    try:
+                        audio_url = data['entries'][0]['pronunciations'][i]['audio']['url']
+                    except:
+                        audio_url = None
+            except KeyError:
+                pass
 
             # GET SYNONYMS
             # try: If synonyms are not in Lingua Dictionary, output None
@@ -87,15 +80,6 @@ def connect_lingua_api(vocabs:list, supportable_languages:list, user:tuple, lang
                             if 'usageExamples' in vocab_dat[j]['senses'][i].keys()]
             except:
                 examples = None
-
-        # if the definition does not exist in Lingua, translate it in Korean
-        elif "ko" in languages:
-            translator = Translator()
-            definitions = translator.translate(vocab, src="en", dest='ko').text
-
-        # revert the vocab back to its original (before translation)
-        if vocab_orig != None:
-            vocab = vocab_orig
         
         # Collect vocab details
         vocab_dic.setdefault(vocab, []).append({'definitions': definitions,
