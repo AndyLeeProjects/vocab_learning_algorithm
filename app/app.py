@@ -13,8 +13,8 @@ def home():
 @app.route('/slack/interactive', methods=['POST'])
 def slack_interactive():
     # Parse the payload from the request
-    print(payload)
     payload = json.loads(request.form.get('payload'))
+    print(payload)
 
     # Extract the vocabulary name from the payload
     vocabulary_name = payload['message']['blocks'][0]['text']['text'].split(': ')[1]
