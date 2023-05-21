@@ -5,58 +5,32 @@ import sys
 import logging
 
 app = Flask(__name__)
+payloads = []  # Store the payloads
 
 @app.route('/')
 def home():
     return render_template('index.html')
 
 
-@app.route('/slack/interactive', methods=['POST', 'GET'])
+@app.route('/slack/interactive', methods=['POST'])
 def slack_interactive():
-    if request.method == 'POST':
-        # Parse the payload from the request
-        payload = json.loads(request.form.get('payload'))
-        logging.info(payload)
+    # Parse the payload from the request
+    payload = json.loads(request.form.get('payload'))
+    logging.info(payload)
 
-        # Extract the necessary data from the payload
-        text = payload.get('message', {}).get('text', '')
-        button_clicked = payload.get('actions', [{}])[0].get('text', {}).get('text', '')
-        timestamp = payload.get('actions', [{}])[0].get('action_ts', '')
+    # Append the payload to the list
+    payloads.append(payload)
 
-        # Log the extracted data
-        logging.info(f"Text: {text}")
-        logging.info(f"Button Clicked: {button_clicked}")
-        logging.info(f"Timestamp: {timestamp}")
+    response = {
+        'payloads': payloads
+    }
 
-        # Perform any necessary actions based on the extracted data
-        # (e.g., store the data in a database)
+    return jsonify(response)
 
-        # Construct the response message
-        response = {
-            'text': f"Received rating for vocabulary '{text}': {button_clicked}"
-        }
 
-        return jsonify(response)
-    elif request.method == 'GET':
-        # Extract the necessary data from the query parameters
-        text = request.args.get('text', '')
-        button_clicked = request.args.get('button_clicked', '')
-        timestamp = request.args.get('timestamp', '')
-
-        # Log the extracted data
-        logging.info(f"Text: {text}")
-        logging.info(f"Button Clicked: {button_clicked}")
-        logging.info(f"Timestamp: {timestamp}")
-
-        # Perform any necessary actions based on the extracted data
-        # (e.g., store the data in a database)
-
-        # Construct the response message
-        response = {
-            'text': f"Received rating for vocabulary '{text}': {button_clicked}"
-        }
-
-        return jsonify(response)
+@app.route('/payloads', methods=['GET'])
+def get_payloads():
+    return jsonify(payloads)
 
 
 @app.errorhandler(404)
