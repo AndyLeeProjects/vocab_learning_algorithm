@@ -16,24 +16,28 @@ def slack_interactive():
     # Parse the payload from the request
     payload = json.loads(request.form.get('payload'))
     logging.info(payload)
-    print(payload)
-    logging.info(payload["message"])
-    logging.info(payload["message"]["blocks"])
-    # print payload information on the server console
-    print(payload, file=sys.stdout)
+    
+    # Extract the necessary data from the payload
+    text = payload.get('message', {}).get('text', '')
+    button_clicked = payload.get('actions', [{}])[0].get('text', {}).get('text', '')
+    timestamp = payload.get('actions', [{}])[0].get('action_ts', '')
 
-    # Extract the vocabulary name from the payload
-    vocabulary_name = payload['message']['blocks'][0]['text']['text'].split(': ')[1]
+    # Log the extracted data
+    logging.info(f"Text: {text}")
+    logging.info(f"Button Clicked: {button_clicked}")
+    logging.info(f"Timestamp: {timestamp}")
 
-    # Extract the user's confidence rating from the selected button
-    confidence_rating = payload['actions'][0]['value']
+    # Print the extracted data on the server console
+    print(f"Text: {text}", file=sys.stdout)
+    print(f"Button Clicked: {button_clicked}", file=sys.stdout)
+    print(f"Timestamp: {timestamp}", file=sys.stdout)
 
-    # Perform any necessary actions based on the confidence rating
-    # (e.g., store the rating in a database)
+    # Perform any necessary actions based on the extracted data
+    # (e.g., store the data in a database)
 
     # Construct the response message
     response = {
-        'text': f"Received rating for vocabulary '{vocabulary_name}': {confidence_rating}"
+        'text': f"Received rating for vocabulary '{text}': {button_clicked}"
     }
 
     return jsonify(response)
