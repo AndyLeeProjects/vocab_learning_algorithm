@@ -11,36 +11,52 @@ def home():
     return render_template('index.html')
 
 
-@app.route('/slack/interactive', methods=['POST'])
+@app.route('/slack/interactive', methods=['POST', 'GET'])
 def slack_interactive():
-    # Parse the payload from the request
-    payload = json.loads(request.form.get('payload'))
-    logging.info(payload)
-    
-    # Extract the necessary data from the payload
-    text = payload.get('message', {}).get('text', '')
-    button_clicked = payload.get('actions', [{}])[0].get('text', {}).get('text', '')
-    timestamp = payload.get('actions', [{}])[0].get('action_ts', '')
+    if request.method == 'POST':
+        # Parse the payload from the request
+        payload = json.loads(request.form.get('payload'))
+        logging.info(payload)
 
-    # Log the extracted data
-    logging.info(f"Text: {text}")
-    logging.info(f"Button Clicked: {button_clicked}")
-    logging.info(f"Timestamp: {timestamp}")
+        # Extract the necessary data from the payload
+        text = payload.get('message', {}).get('text', '')
+        button_clicked = payload.get('actions', [{}])[0].get('text', {}).get('text', '')
+        timestamp = payload.get('actions', [{}])[0].get('action_ts', '')
 
-    # Print the extracted data on the server console
-    print(f"Text: {text}", file=sys.stdout)
-    print(f"Button Clicked: {button_clicked}", file=sys.stdout)
-    print(f"Timestamp: {timestamp}", file=sys.stdout)
+        # Log the extracted data
+        logging.info(f"Text: {text}")
+        logging.info(f"Button Clicked: {button_clicked}")
+        logging.info(f"Timestamp: {timestamp}")
 
-    # Perform any necessary actions based on the extracted data
-    # (e.g., store the data in a database)
+        # Perform any necessary actions based on the extracted data
+        # (e.g., store the data in a database)
 
-    # Construct the response message
-    response = {
-        'text': f"Received rating for vocabulary '{text}': {button_clicked}"
-    }
+        # Construct the response message
+        response = {
+            'text': f"Received rating for vocabulary '{text}': {button_clicked}"
+        }
 
-    return jsonify(response)
+        return jsonify(response)
+    elif request.method == 'GET':
+        # Extract the necessary data from the query parameters
+        text = request.args.get('text', '')
+        button_clicked = request.args.get('button_clicked', '')
+        timestamp = request.args.get('timestamp', '')
+
+        # Log the extracted data
+        logging.info(f"Text: {text}")
+        logging.info(f"Button Clicked: {button_clicked}")
+        logging.info(f"Timestamp: {timestamp}")
+
+        # Perform any necessary actions based on the extracted data
+        # (e.g., store the data in a database)
+
+        # Construct the response message
+        response = {
+            'text': f"Received rating for vocabulary '{text}': {button_clicked}"
+        }
+
+        return jsonify(response)
 
 
 @app.errorhandler(404)
