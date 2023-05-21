@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template
 import json
 import os
 import sys
+import logging
 
 app = Flask(__name__)
 
@@ -14,7 +15,7 @@ def home():
 def slack_interactive():
     # Parse the payload from the request
     payload = json.loads(request.form.get('payload'))
-    print(payload)
+    logging.info(payload)
 
     # Extract the vocabulary name from the payload
     vocabulary_name = payload['message']['blocks'][0]['text']['text'].split(': ')[1]
