@@ -1,5 +1,5 @@
 def slack_credentials():
-    slack_token = 'xoxb-1725203205332-2999722705843-4ZgxStQj871Txo4MoA2JTA9N'
+    slack_token = 'xoxb-1725203205332-2999722705843-Gx9DZczV2HNCihdh0wbHrYvn'
     return slack_token
 
 def notion_credentials():
