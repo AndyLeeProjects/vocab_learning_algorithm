@@ -16,8 +16,11 @@ def slack_interactive():
     # Parse the payload from the request
     payload = json.loads(request.form.get('payload'))
     logging.info(payload)
+    print(payload)
     logging.info(payload["message"])
     logging.info(payload["message"]["blocks"])
+    # print payload information on the server console
+    print(payload, file=sys.stdout)
 
     # Extract the vocabulary name from the payload
     vocabulary_name = payload['message']['blocks'][0]['text']['text'].split(': ')[1]
