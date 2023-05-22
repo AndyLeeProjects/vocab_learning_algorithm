@@ -1,6 +1,8 @@
-
 from secret import lingua_credentials
 import requests, json
+import difflib
+import nltk
+from nltk.corpus import wordnet
 
 def get_definitions(vocabs:list):
     """
@@ -12,18 +14,6 @@ def get_definitions(vocabs:list):
     vocab_dic = {}
     for vocab in vocabs:
         
-        url = "https://lingua-robot.p.rapidapi.com/language/v1/entries/en/" + \
-            vocab.lower().strip(' ')
-
-        headers = {
-            "X-RapidAPI-Key": lingua_credentials(),
-            "X-RapidAPI-Host": "lingua-robot.p.rapidapi.com"
-        }
-        
-        # Request Data
-        response = requests.request("GET", url, headers=headers)
-        data = json.loads(response.text)
-
         # DEFINE vocab_info
         # try: Some vocabularies do not have definitions (ex: fugazi)
         url = "https://lingua-robot.p.rapidapi.com/language/v1/entries/en/" + \
@@ -37,8 +27,6 @@ def get_definitions(vocabs:list):
         # Request Data
         response = requests.request("GET", url, headers=headers)
         data = json.loads(response.text)
-        data
-        data['entries'][0]['lexemes']
 
         try:
             vocab_dat = data['entries'][0]['lexemes']
@@ -47,6 +35,21 @@ def get_definitions(vocabs:list):
             definitions = None
             synonyms = None
             examples = None
+            audio_url = None
+            
+        def extract_audio_url(json_data):
+            
+            try:
+                json_data = data['entries']
+                for entry in json_data:
+                    pronunciations = entry.get('pronunciations', [])
+                    for pronunciation in pronunciations:
+                        audio = pronunciation.get('audio')
+                        if audio:
+                            return audio['url']
+            except IndexError:
+                return None
+            return None
 
         if vocab_dat != None:
             # GET DEFINITIONS
@@ -56,14 +59,7 @@ def get_definitions(vocabs:list):
             definitions = definitions[:5]
             
             # GET AUDIO URLS
-            try:
-                for i in range(len(data['entries'][0]['pronunciations'])):
-                    try:
-                        audio_url = data['entries'][0]['pronunciations'][i]['audio']['url']
-                    except:
-                        audio_url = None
-            except KeyError:
-                pass
+            audio_url = extract_audio_url(data)
 
             # GET SYNONYMS
             # try: If synonyms are not in Lingua Dictionary, output None

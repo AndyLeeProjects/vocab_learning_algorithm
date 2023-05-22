@@ -9,7 +9,7 @@ from secret import slack_credentials
 from spellchecker import SpellChecker
 import emoji
 
-def send_slack_message(vocab_dic:dict, img_url_dic:dict, client):
+def send_slack_message(vocab_dic:dict, img_url_dic:dict, client, user_id):
     """    
     send_slack_message():
         Organizes vocab data into a clean string format. Then, with Slack API, the string is 
@@ -18,105 +18,136 @@ def send_slack_message(vocab_dic:dict, img_url_dic:dict, client):
     Args:
         vocab_dic (dict): vocabulary data
     """
-
-    # Assign divider & empty block for the Slack Message        
-    divider = {"type": "divider"}
-    empty_block = {"type": "section","text": {"type": "plain_text","text": "\n\n"}}
-
-    blocks = [empty_block]
-    message = ''
-
-    for c, vocab in enumerate(vocab_dic.keys()):
-        header_block = {
-                    "type": "header",
-                    "text": {
-                        "type": "plain_text",
-                        "text": str(c + 1) + ". " + vocab.capitalize()
-                    }
-                }
-        
-        all_def = vocab_dic[vocab][0]['definitions']
-        all_ex = vocab_dic[vocab][0]['examples']
-        all_sy = vocab_dic[vocab][0]['synonyms']
-        if vocab_dic[vocab][0]['audio_url'] != None:
-            audio_file = f"<{vocab_dic[vocab][0]['audio_url']}|{emoji.emojize(':speaker_high_volume: *Pronunciation*')}>\n"
+    def create_progress_bar_and_audio(progress, audio_urls, length=20):
+        filled_blocks = int(progress / 7 * length)
+        empty_blocks = length - filled_blocks
+        progress_bar = "▓" * filled_blocks + "░" * empty_blocks
+        if audio_urls != None:
+            return f"<{audio_urls}|:loud_sound:> \t`{progress_bar}`  {round(progress / 7 * 100)}%"
         else:
-            audio_file = "\n"
-        message += audio_file + "\n"
+            return f"`{progress_bar}` {round(progress / 7 * 100)}%"
+
+    def get_vocabulary_block(vocab, definitions, synonyms, examples, audio_urls, img_urls, exposure):
+        definition_str = ""
+        try:
+            for i, definition in enumerate(definitions):
+                if i > 2:
+                    break
+                elif definition != None and definition != []:
+                    definition_str += f">• {definition}\n"
+                else:
+                    pass
+        except TypeError:
+            definition_str = ""
         
-        # Write Definitions
-        if all_def != np.nan and all_def != None:
-            message += emoji.emojize(':sparkles: *Definition:* \n')
-
-        # When lingua doesn't have its definition, it returns a translation in Korean
-        ## This only applies to Korean users
-        if isinstance(vocab_dic[vocab][0]['definitions'], list) == True:
-            for definition in range(len(all_def)):
-                message += '>• ' + all_def[definition] + '\n'
+        synonym_str = ""
+        try:
+            for i, synonym in enumerate(synonyms):
+                if synonym != None and synonym != []:
+                    synonym_str += f">• {synonym[0]}\n"
+                else:
+                    pass
+        except TypeError:
+            synonym_str = ""
         
-        message += '\n'
-
-        # Write Synonyms
-        synonyms = []
-        if all_sy != None:
-            message += emoji.emojize(':sparkles: *Synonyms:* \n')
-            message += ">• "
-            temp = ""
-            for i, synonym in enumerate(all_sy):
-                if synonym[0] not in synonyms:
-                    if i == 0:
-                        message += synonym[0]
-                    else:
-                        message += ', ' + synonym[0]
-            message += '\n\n'
-
-        # Write Examples
-        if all_ex != [] and all_ex != None:
-            message += emoji.emojize(':sparkles: *Example:* \n')
-
-            for example in range(len(all_ex[0])):
-                message += '>• ' + all_ex[0][example].strip('\n ') + '\n'
+        example_str = ""
+        try:
+            for i, example in enumerate(examples):
+                if i > 2:
+                    break
+                elif example != None and example != []:
+                    example_str += f">• {example[0]}\n"
+                else:
+                    pass
+        except TypeError:
+            example_str = ""
+        try:
+            first_img = img_urls[0]
+        except IndexError:
+            first_img = ""
+        try:
+            second_img = img_urls[1]
+        except IndexError:
+            second_img = ""
+        try:
+            third_img = img_urls[2]
+        except IndexError:
+            third_img = ""  
         
-        content_block = {
+        header_block = {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": vocab.capitalize()
+            }
+        }
+        
+        fields = []
+        for str_dic in [{"*Definitions:*": definition_str}, {"*Synonyms:*": synonym_str}, {"*Examples:*": example_str}]:
+            dic_key = list(str_dic.keys())[0]
+            if str_dic[dic_key] != "":
+                block = {"type": "mrkdwn",
+                         "text": f":sparkles: {dic_key}\n{str_dic[dic_key]}\n \n"}
+                fields.append(block)
+        if fields == []:
+            fields = [{"type": "mrkdwn",
+                       "text": " "}]
+
+        block = [
+                header_block,
+                {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": message
-                        }
-            }
-        
-        image_blocks = []
-
-        # Generate image blocks for each URL
-        for ind, img_url in enumerate(img_url_dic[vocab]):
-            # Construct the image block for each URL
-            image_block = {
-                "type": "image",
-                "title": {
-                    "type": "plain_text",
-                    "text": f"Image {ind + 1}"
+                    "text": create_progress_bar_and_audio(exposure, audio_urls)
+                }
                 },
-                "image_url": img_url,
-                "alt_text": f"Image {ind + 1}"
-            }
-            # Add the image block to the list
-            image_blocks.append(image_block)
+                {
+                "type": "section",
+                "fields": fields
+                },
+                {
+                "type": "image",
+                "image_url": first_img,
+                "alt_text": "Image 1"
+                },
+                {
+                "type": "image",
+                "image_url": third_img,
+                "alt_text": "Image 3"
+                }]
 
-        
-        # Append all blocks in the corresponding order
-        blocks.append(header_block)
-        blocks.append(divider)
-        blocks.append(content_block)
-        if image_block != None:
-            blocks += image_blocks
-        blocks.append(empty_block)
-        blocks.append(empty_block)
-        blocks.append(empty_block)
-        message = ''
+        return block
+    
+    vocabs = list(vocab_dic.keys())
+    exposures = [vocab_dic[vocab][0]["exposure"] for vocab in vocabs]
+    definitions = [vocab_dic[vocab][0]['definitions'] for vocab in vocabs]
+    synonyms = [vocab_dic[vocab][0]['synonyms'] for vocab in vocabs]
+    examples = [vocab_dic[vocab][0]['examples'] for vocab in vocabs]
+    audio_urls = [vocab_dic[vocab][0]['audio_url'] for vocab in vocabs]
+    img_urls = [img_url_dic[vocab] for vocab in vocabs]
+    
+    divider_block = {"type": "divider"}
+    empty_block = {"type": "section","text": {"type": "plain_text","text": "\n\n"}}
+    blocks = []
 
-    notification_msg = "Andy, check out the new vocabularies!"
+    for ind, vocab in enumerate(vocabs):
+        block = get_vocabulary_block(vocab, definitions[ind], synonyms[ind], examples[ind], audio_urls[ind], img_urls[ind], exposures[ind])
+        blocks += block
+        blocks += [divider_block]
+        blocks += [empty_block]
 
-    client.chat_postMessage(
-            text = notification_msg,
-            channel = "C02VDLCB52N",
-            blocks = blocks)
+    if vocabs != []:
+        notification_msg = "Check out the new vocabularies ✨"
+
+        client.chat_postMessage(
+                text = notification_msg,
+                channel = user_id,
+                blocks = blocks)
+    else:
+        notification_msg = "There is not enough vocabularies 😢"
+
+        client.chat_postMessage(
+                text = notification_msg,
+                channel = user_id,
+                blocks = blocks)
