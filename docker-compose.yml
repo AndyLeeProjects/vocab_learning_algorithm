@@ -1,0 +1,69 @@
+version: '2.6.1'
+services:
+  web:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=development
+    networks:
+      - airflow-net
+    volumes:
+      - ./src:/app/src
+
+  scheduler:
+    image: apache/airflow:latest
+    restart: always
+    depends_on:
+      - web
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./src:/src
+    environment:
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    command: scheduler
+    ports:
+      - 8000:8000  # Port mapping for Airflow web UI
+    networks:
+      - airflow-net
+
+  worker:
+    image: apache/airflow:latest
+    restart: always
+    depends_on:
+      - scheduler
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./src:/src
+    environment:
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    command: celery worker --loglevel=INFO
+    networks:
+      - airflow-net
+
+  db:
+    image: postgres:13
+    restart: always
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - airflow-net
+
+networks:
+  airflow-net:
+
+volumes:
+  pgdata:
