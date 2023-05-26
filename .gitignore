@@ -5,3 +5,5 @@ secret/
 __pycache__
 db_connections.py
 secret.py
+logs/
+config/
