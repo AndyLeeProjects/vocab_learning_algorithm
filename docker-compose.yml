@@ -307,5 +307,16 @@ services:
     environment:
       - DATABASE_URL=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
 
+  vocab_postgres:
+    image: postgres:13
+    restart: always
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=vocab2023!
+      - POSTGRES_DB=199.241.139.206
+
+
 volumes:
   postgres-db-volume:
