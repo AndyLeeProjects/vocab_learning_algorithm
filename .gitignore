@@ -7,3 +7,6 @@ db_connections.py
 secret.py
 logs/
 config/
+/logs
+/logs/*
+.vscode/
