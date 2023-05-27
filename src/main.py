@@ -139,7 +139,7 @@ class LearnVocab():
         self.update_next_vocabs()
         self.update_new_vocabs(user_id)
         self.send_slack_messages(user_id)
-        
+
 
 class UsersDeployment:
     def __init__(self):
