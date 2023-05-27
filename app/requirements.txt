@@ -1,1 +1,2 @@
-Flask==2.2.3
+Flask==2.2.5
+flask_limiter==3.3.1
