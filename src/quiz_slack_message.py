@@ -4,7 +4,7 @@ import random
 import numpy as np
 from datetime import datetime, date, timedelta
 import time
-from secret import slack_credentials
+from airflow.models import Variable
 from spellchecker import SpellChecker
 import os
 import json
@@ -12,7 +12,7 @@ from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 
-slack_token = slack_credentials()
+slack_token = Variable.get("slack_credentials_token")
 client = WebClient(token=slack_token)
 
 def send_slack_message(channel_id, vocabulary_name):

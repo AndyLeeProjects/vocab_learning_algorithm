@@ -1,8 +1,8 @@
-from secret import lingua_credentials
 import requests, json
 import difflib
 import nltk
 from nltk.corpus import wordnet
+from airflow.models import Variable
 
 def get_definitions(vocabs:list):
     """
@@ -20,7 +20,7 @@ def get_definitions(vocabs:list):
             vocab.lower().strip(' ')
 
         headers = {
-            "X-RapidAPI-Key": lingua_credentials(),
+            "X-RapidAPI-Key": Variable.get("lingua_credentials"),
             "X-RapidAPI-Host": "lingua-robot.p.rapidapi.com"
         }
 

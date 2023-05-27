@@ -5,7 +5,6 @@ import numpy as np
 from slack import WebClient
 from datetime import datetime, date, timedelta
 import time
-from secret import slack_credentials
 from spellchecker import SpellChecker
 import emoji
 
