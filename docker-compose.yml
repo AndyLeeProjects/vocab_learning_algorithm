@@ -73,10 +73,10 @@ x-airflow-common:
     # for other purpose (development, test and especially production usage) build/extend Airflow image.
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
   volumes:
-    - ./dags:/home/alee/vocab_learning_algorithm/dags
-    - ./logs:/home/alee/vocab_learning_algorithm/logs
-    - ./plugins:/home/alee/vocab_learning_algorithm/plugins
-  user: "1001:0"
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./plugins::/opt/airflow/plugins
+  user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
     redis:
